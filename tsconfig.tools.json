@@ -1,0 +1,13 @@
+{
+  "extends": "@cyansalt/tsconfig/tsconfig.app",
+  "include": [
+    "**/*.js",
+    "**/*.ts",
+    "**/*.vue",
+    ".eslintrc.cjs"
+  ],
+  "exclude": [
+    "**/dist",
+    "**/node_modules"
+  ]
+}

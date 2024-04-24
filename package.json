@@ -1,0 +1,54 @@
+{
+  "name": "vue-spinach",
+  "version": "0.1.0-0",
+  "description": "Transform Vue SFC between Option API and Composition API",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "bin": {
+    "vue-spinach": "./dist/cli.cjs"
+  },
+  "scripts": {
+    "lint": "eslint --ignore-path .gitignore --fix --ext .js,.ts,.vue .",
+    "prepack": "unbuild",
+    "release": "release-it",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyanSalt/vue-spinach.git"
+  },
+  "keywords": [
+    "vue",
+    "composition-api"
+  ],
+  "author": "CyanSalt",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CyanSalt/vue-spinach/issues"
+  },
+  "homepage": "https://github.com/CyanSalt/vue-spinach#readme",
+  "devDependencies": {
+    "@cyansalt/eslint-config-preset": "^1.18.0",
+    "@cyansalt/tsconfig": "^2.2.1",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.12.7",
+    "@vue-macros/reactivity-transform": "^0.4.4",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "unbuild": "^2.0.0",
+    "vitest": "^1.5.0",
+    "vue": "^3.4.24"
+  },
+  "dependencies": {
+    "minimist": "^1.2.8"
+  }
+}
