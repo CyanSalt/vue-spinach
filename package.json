@@ -37,8 +37,10 @@
   },
   "homepage": "https://github.com/CyanSalt/vue-spinach#readme",
   "devDependencies": {
+    "@babel/types": "^7.24.0",
     "@cyansalt/eslint-config-preset": "^1.18.0",
     "@cyansalt/tsconfig": "^2.2.1",
+    "@types/lodash": "^4.17.0",
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.12.7",
     "@vue-macros/reactivity-transform": "^0.4.4",
@@ -49,6 +51,10 @@
     "vue": "^3.4.24"
   },
   "dependencies": {
+    "@vue/compiler-sfc": "^3.4.24",
+    "ast-kit": "^0.12.1",
+    "lodash": "^4.17.21",
+    "magic-string-ast": "^0.5.0",
     "minimist": "^1.2.8"
   }
 }

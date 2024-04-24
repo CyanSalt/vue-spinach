@@ -5,6 +5,7 @@
     "declaration": true,
     "rootDir": "src",
     "outDir": "dist",
+    "target": "ESNext",
     "module": "ES2020"
   },
   "include": [
