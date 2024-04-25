@@ -14,10 +14,12 @@ const props = defineProps({
     },
   })
 
+const suffix = ref('()')
+
 const msg = ref('')
 
 const formatted = computed(() => {
-      return props.prefix + msg.value
+      return props.prefix + msg.value + suffix.value
     })
 
 function reset() {

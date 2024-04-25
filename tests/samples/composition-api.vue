@@ -16,10 +16,12 @@ const {
     },
   })
 
+const suffix = ref('()')
+
 const msg = ref('')
 
 const formatted = computed(() => {
-      return prefix + msg.value
+      return prefix + msg.value + suffix.value
     })
 
 function reset() {

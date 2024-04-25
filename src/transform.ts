@@ -1,4 +1,4 @@
-import type { CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program } from '@babel/types'
+import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement } from '@babel/types'
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import type { MagicStringAST } from 'magic-string-ast'
 import { visitNode } from './ast'
@@ -258,4 +258,12 @@ export function getProperties(node: ObjectExpression) {
     }
   }
   return result
+}
+
+export function splitFunctionBody(block: BlockStatement) {
+  const stmts = block.body
+  const returnStmt = stmts.find((child): child is ReturnStatement => child.type === 'ReturnStatement')
+  if (!returnStmt) return undefined
+  const stmtsBefore = stmts.slice(0, stmts.indexOf(returnStmt))
+  return [returnStmt, stmtsBefore] as const
 }

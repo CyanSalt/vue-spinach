@@ -9,6 +9,7 @@ import transformData from './plugins/data'
 import transformDirectives from './plugins/directives'
 import transformMethods from './plugins/methods'
 import transformProps from './plugins/props'
+import transformSetup from './plugins/setup'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 const defaultOptions: Required<TransformSFCOptions> = {
@@ -22,6 +23,7 @@ const builtinPlugins: Plugin[] = [
   transformComponents,
   transformDirectives,
   transformProps,
+  transformSetup,
   transformData,
   transformComputed,
   transformMethods,

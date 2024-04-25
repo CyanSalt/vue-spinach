@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { ref } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -15,10 +16,12 @@ const {
     },
   })
 
+const suffix = ref('()')
+
 let msg = $ref('')
 
 const formatted = $computed(() => {
-      return prefix + msg
+      return prefix + msg + suffix.value
     })
 
 function reset() {

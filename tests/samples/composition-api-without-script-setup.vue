@@ -18,10 +18,12 @@ export default {
     'my-click': MyClick,
   },
   setup(props) {
+    const suffix = ref('()')
+
     const msg = ref('')
 
     const formatted = computed(() => {
-          return props.prefix + msg.value
+          return props.prefix + msg.value + suffix.value
         })
 
     function reset() {
@@ -29,6 +31,7 @@ export default {
         }
 
     return {
+      suffix,
       msg,
       formatted,
       reset,

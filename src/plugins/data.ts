@@ -1,25 +1,25 @@
-import type { ReturnStatement } from '@babel/types'
+import { isFunctionType } from 'ast-kit'
 import { defineSpinachPlugin } from '../plugin'
-import { getProperties } from '../transform'
+import { getProperties, splitFunctionBody } from '../transform'
 
 export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'data'
   },
   *transform({ node, magicString, options }, { factory, transform }) {
-    if (node.type === 'FunctionExpression' || node.type === 'ObjectMethod') {
-      const stmts = node.body.body
-      const returnStmt = stmts.find((child): child is ReturnStatement => child.type === 'ReturnStatement')
-      if (returnStmt && returnStmt.argument?.type === 'ObjectExpression') {
-        const stmtsBefore = stmts.slice(0, stmts.indexOf(returnStmt))
-        const codeBefore = magicString.sliceNode(stmtsBefore)
-        if (codeBefore) {
-          yield factory.code(codeBefore)
-          yield factory.code('')
-        }
+    if (isFunctionType(node) && node.body.type === 'BlockStatement') {
+      const result = splitFunctionBody(node.body)
+      if (!result) {
+        throw new Error('"data" function needs to contain a return statement at the top level.')
+      }
+      const [returnStmt, stmtsBefore] = result
+      const codeBefore = magicString.sliceNode(stmtsBefore)
+      if (codeBefore) {
+        yield factory.code(codeBefore)
+        yield factory.code('')
+      }
+      if (returnStmt.argument?.type === 'ObjectExpression') {
         yield* transform(returnStmt.argument)
-      } else {
-        throw new Error('"data" function needs to contain a return statement of an object literal at the top level.')
       }
       return
     }

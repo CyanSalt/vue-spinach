@@ -3,6 +3,7 @@
 </template>
 
 <script lang="ts">
+import { ref } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -22,6 +23,13 @@ export default {
       default: 'my:',
     },
   },
+  setup() {
+    const suffix = ref('()')
+
+    return {
+      suffix,
+    }
+  },
   data() {
     return {
       msg: '',
@@ -29,7 +37,7 @@ export default {
   },
   computed: {
     formatted() {
-      return this.prefix + this.msg
+      return this.prefix + this.msg + this.suffix
     },
   },
   methods: {
