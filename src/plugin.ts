@@ -20,21 +20,28 @@ export interface ThisProperty extends BaseNode {
   type: 'ThisProperty',
   name: string,
   source: string,
+  exposed: boolean,
 }
 
-export type TransformNode = Code | Import | ThisProperty
+export interface Preserve extends BaseNode {
+  type: 'Preserve',
+}
+
+export type TransformNode = Code | Import | ThisProperty | Preserve
 
 export type VisitNode = Code | Import
 
 export const factory = {
   code: (content: string): Code => ({ type: 'Code', content }),
   imports: (from: string, imported: string): Import => ({ type: 'Import', from, imported }),
-  thisProperty: (name: string, source: string): ThisProperty => ({ type: 'ThisProperty', name, source }),
+  thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({ type: 'ThisProperty', name, source, exposed }),
+  preserve: (): Preserve => ({ type: 'Preserve' }),
 }
 
 export interface TransformOptions {
   scriptSetup: boolean,
   reactivityTransform: boolean,
+  propsDestructure: boolean,
 }
 
 export interface TransformContext {
@@ -74,6 +81,6 @@ export interface Plugin {
   >,
 }
 
-export function defineSpinachPlugin<T extends Plugin>(plugin: T) {
+export function defineSpinachPlugin(plugin: Plugin) {
   return plugin
 }

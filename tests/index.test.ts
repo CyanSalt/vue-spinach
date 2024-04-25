@@ -18,7 +18,7 @@ describe('transformSFC', () => {
     expect(result).toBe(codeInCompositionAPI)
   })
 
-  test.only('transform Vue SFC into Composition API without script setup', async () => {
+  test('transform Vue SFC into Composition API without script setup', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
       path.join(import.meta.dirname, './samples/option-api.vue'),
       'utf-8',
@@ -31,6 +31,21 @@ describe('transformSFC', () => {
       scriptSetup: false,
     })
     expect(result).toBe(codeInCompositionAPIWithoutScriptSetup)
+  })
+
+  test('transform Vue SFC into Composition API without props destructure', async () => {
+    const codeInOptionAPI = await fs.promises.readFile(
+      path.join(import.meta.dirname, './samples/option-api.vue'),
+      'utf-8',
+    )
+    const codeInCompositionAPIWithoutPropsDestructure = await fs.promises.readFile(
+      path.join(import.meta.dirname, './samples/composition-api-without-props-destructure.vue'),
+      'utf-8',
+    )
+    const result = transformSFC(codeInOptionAPI, {
+      propsDestructure: false,
+    })
+    expect(result).toBe(codeInCompositionAPIWithoutPropsDestructure)
   })
 
   test('transform Vue SFC into Composition API with reactivity transform', async () => {

@@ -16,6 +16,12 @@ export default {
   directives: {
     'my-click': MyClick,
   },
+  props: {
+    prefix: {
+      type: String,
+      default: 'my:',
+    },
+  },
   data() {
     return {
       msg: '',
@@ -23,7 +29,7 @@ export default {
   },
   computed: {
     formatted() {
-      return this.msg.trim()
+      return this.prefix + this.msg
     },
   },
   methods: {

@@ -8,13 +8,24 @@ import transformComputed from './plugins/computed'
 import transformData from './plugins/data'
 import transformDirectives from './plugins/directives'
 import transformMethods from './plugins/methods'
+import transformProps from './plugins/props'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 const defaultOptions: Required<TransformSFCOptions> = {
   scriptSetup: true,
   reactivityTransform: false,
+  propsDestructure: true,
   plugins: [],
 }
+
+const builtinPlugins: Plugin[] = [
+  transformComponents,
+  transformDirectives,
+  transformProps,
+  transformData,
+  transformComputed,
+  transformMethods,
+]
 
 function transformScript(
   script: Script,
@@ -86,30 +97,20 @@ export interface TransformSFCOptions extends Partial<TransformOptions> {
   plugins?: Plugin[],
 }
 
-const builtinPlugins: Plugin[] = [
-  transformComponents,
-  transformDirectives,
-  transformData,
-  transformComputed,
-  transformMethods,
-]
-
 export function transformSFC(code: string, options?: TransformSFCOptions) {
   const {
-    scriptSetup,
     plugins,
-    reactivityTransform,
+    ...pluginOptions
   } = { ...defaultOptions, ...options }
   const allPlugins = [...builtinPlugins, ...plugins]
-  const { descriptor } = parse(code)
+  const { descriptor } = parse(code, {
+    filename: `sfc.vue#${JSON.stringify(options)}`,
+  })
   const parsedScript = parseScript(descriptor.script)
   const parsedScriptSetup = parseScript(descriptor.scriptSetup)
-  if (scriptSetup) {
+  if (pluginOptions.scriptSetup) {
     if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, {
-        scriptSetup,
-        reactivityTransform,
-      })
+      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, pluginOptions)
       if (descriptor.scriptSetup) {
         descriptor.scriptSetup.content = content
       } else {
@@ -127,10 +128,7 @@ export function transformSFC(code: string, options?: TransformSFCOptions) {
       throw new Error('Could not transform with an existing <script setup> tag when "scriptSetup" is set to false.')
     }
     if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, {
-        scriptSetup,
-        reactivityTransform,
-      })
+      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, pluginOptions)
       descriptor.script!.content = content
     }
   }

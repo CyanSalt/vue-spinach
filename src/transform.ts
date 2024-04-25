@@ -67,6 +67,7 @@ export function transformOptions(
         const node = getPropertyValue(property)
         const context = { name, node, magicString, options }
         const matchedPlugins = plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
+        let shouldPreserve = !matchedPlugins.length
         for (const plugin of matchedPlugins) {
           let lines: string[] = []
           const helpers: TransformHelpers = { factory, transform: undefined as never }
@@ -86,13 +87,16 @@ export function transformOptions(
               case 'ThisProperty':
                 thisProperties.push(item)
                 break
+              case 'Preserve':
+                shouldPreserve = true
+                break
             }
           }
           if (lines.length) {
             code.push(lines.join('\n'))
           }
         }
-        if (matchedPlugins.length) {
+        if (!shouldPreserve) {
           return preserved
         }
       }
@@ -168,13 +172,18 @@ export function createDefineOptions(properties: ObjectExpression['properties'], 
 }
 
 export function createSetupReturn(properties: ThisProperty[]) {
-  return `return {\n${properties.map(property => `  ${property.name},\n`).join('')}}`
+  return `return {\n${
+    properties
+      .filter(property => property.exposed)
+      .map(property => `  ${property.name},\n`)
+      .join('')
+  }}`
 }
 
 export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
   return `export default {\n${[
     ...properties.map(property => `  ${magicString.sliceNode(property)},`),
-    `  setup() {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
+    `  setup(props) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
   ].join('\n')}\n}`
 }
 

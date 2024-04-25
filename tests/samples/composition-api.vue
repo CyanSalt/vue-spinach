@@ -7,10 +7,19 @@ import MyClick from '/path/to/MyClick'
 
 const vMyClick = MyClick
 
+const {
+  prefix,
+} = defineProps({
+    prefix: {
+      type: String,
+      default: 'my:',
+    },
+  })
+
 const msg = ref('')
 
 const formatted = computed(() => {
-      return msg.value.trim()
+      return prefix + msg.value
     })
 
 function reset() {

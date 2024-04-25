@@ -17,11 +17,11 @@ export default {
   directives: {
     'my-click': MyClick,
   },
-  setup() {
+  setup(props) {
     const msg = ref('')
 
     const formatted = computed(() => {
-          return msg.value.trim()
+          return props.prefix + msg.value
         })
 
     function reset() {

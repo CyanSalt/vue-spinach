@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { ref, computed } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -6,23 +7,21 @@ import MyClick from '/path/to/MyClick'
 
 const vMyClick = MyClick
 
-const {
-  prefix,
-} = defineProps({
+const props = defineProps({
     prefix: {
       type: String,
       default: 'my:',
     },
   })
 
-let msg = $ref('')
+const msg = ref('')
 
-const formatted = $computed(() => {
-      return prefix + msg
+const formatted = computed(() => {
+      return props.prefix + msg.value
     })
 
 function reset() {
-      msg = ''
+      msg.value = ''
     }
 
 defineOptions({
