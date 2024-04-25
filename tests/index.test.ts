@@ -5,7 +5,7 @@ import { transformSFC } from '../src'
 
 describe('transformSFC', () => {
 
-  test.skip('transform Vue SFC into Composition API', async () => {
+  test('transform Vue SFC into Composition API', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
       path.join(import.meta.dirname, './samples/option-api.vue'),
       'utf-8',

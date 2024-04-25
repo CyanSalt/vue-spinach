@@ -1,23 +1,21 @@
-import { isLiteralType, resolveString } from 'ast-kit'
 import { camelCase } from 'lodash'
 import { defineSpinachPlugin } from '../plugin'
+import { getProperties } from '../transform'
 
 export default defineSpinachPlugin({
-  filter: name => name === 'directives',
-  *transform(node, magicString) {
+  transformInclude({ name }) {
+    return name === 'directives'
+  },
+  *transform({ node, magicString }, { factory }) {
     if (node.type === 'ObjectExpression') {
-      for (const property of node.properties) {
-        if (property.type === 'ObjectProperty' && (
-          property.key.type === 'Identifier'
-          || isLiteralType(property.key)
-        )) {
-          const name = camelCase('v-' + resolveString(property.key))
-          const variableName = property.value.type === 'Identifier'
-            ? property.value.name
-            : undefined
-          if (variableName !== name) {
-            yield `const ${name} = ${magicString.sliceNode(property.value)}`
-          }
+      const properties = getProperties(node)
+      for (const [key, value] of Object.entries(properties)) {
+        const name = camelCase('v-' + key)
+        const variableName = value.type === 'Identifier'
+          ? value.name
+          : undefined
+        if (variableName !== name) {
+          yield factory.code(`const ${name} = ${magicString.sliceNode(value)}`)
         }
       }
     }

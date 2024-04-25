@@ -4,8 +4,11 @@ import { createSourceLocation, parseScript } from './ast'
 import { generateCode } from './generator'
 import type { Plugin } from './plugin'
 import transformComponents from './plugins/components'
+import transformComputed from './plugins/computed'
+import transformData from './plugins/data'
 import transformDirectives from './plugins/directives'
-import { appendOptions, createDefineOptions, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions } from './transform'
+import transformMethods from './plugins/methods'
+import { addImports, appendOptions, createDefineOptions, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 export interface TransformOptions {
   format?: 'composition' | 'option',
@@ -17,6 +20,9 @@ export interface TransformOptions {
 const builtinPlugins: Plugin[] = [
   transformComponents,
   transformDirectives,
+  transformData,
+  transformComputed,
+  transformMethods,
 ]
 
 const defaultOptions: Required<TransformOptions> = {
@@ -31,31 +37,45 @@ function transformScriptSetup(
   scriptSetup: Script | undefined,
   plugins: Plugin[],
 ) {
+  const baseScript = scriptSetup ?? script
   const options = getOptions(script.ast)
-  if (options) {
-    const { generated, properties } = transformOptions(options.object.properties, script.magicString, plugins)
-    if (scriptSetup) {
-      if (properties.length) {
-        const defineOptions = getDefineOptions(scriptSetup.ast)
-        if (defineOptions) {
-          appendOptions(defineOptions.object, scriptSetup.magicString, properties, script.magicString)
-        } else {
-          generated.unshift(createDefineOptions(properties, script.magicString))
-        }
-      }
-      if (generated.length) {
-        prependStatements(scriptSetup.ast, scriptSetup.magicString, generated)
-      }
-    } else {
-      if (properties.length) {
-        generated.unshift(createDefineOptions(properties, script.magicString))
-      }
-      replaceStatements(options.exports, script.magicString, generated)
-    }
+  if (!options) {
+    return baseScript.magicString.toString()
   }
-  return scriptSetup
-    ? scriptSetup.magicString.toString()
-    : script.magicString.toString()
+  const {
+    code,
+    imports: optionsImports,
+    thisProperties,
+    properties,
+  } = transformOptions(options.object.properties, script.magicString, plugins)
+  if (scriptSetup) {
+    if (properties.length) {
+      const defineOptions = getDefineOptions(scriptSetup.ast)
+      if (defineOptions) {
+        appendOptions(defineOptions.object, scriptSetup.magicString, properties, script.magicString)
+      } else {
+        code.push(createDefineOptions(properties, script.magicString))
+      }
+    }
+    if (code.length) {
+      prependStatements(scriptSetup.ast, scriptSetup.magicString, code)
+    }
+  } else {
+    if (properties.length) {
+      code.push(createDefineOptions(properties, script.magicString))
+    }
+    replaceStatements(options.exports, script.magicString, code)
+  }
+  addImports(baseScript.ast, baseScript.magicString, optionsImports)
+  const transformed = parseScript({
+    ...baseScript.block,
+    content: baseScript.magicString.toString(),
+  })!
+  const {
+    imports: thisPropertiesImports,
+  } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, plugins)
+  addImports(transformed.ast, transformed.magicString, thisPropertiesImports)
+  return transformed.magicString.toString()
 }
 
 export function transformSFC(code: string, options?: TransformOptions) {

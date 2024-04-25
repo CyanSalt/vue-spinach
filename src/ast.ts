@@ -1,5 +1,6 @@
-import type { Program } from '@babel/types'
-import type { SFCScriptBlock } from '@vue/compiler-sfc'
+import type { Node, Program } from '@babel/types'
+import { VISITOR_KEYS } from '@babel/types'
+import type { SFCBlock } from '@vue/compiler-sfc'
 import { babelParse } from 'ast-kit'
 import { MagicStringAST } from 'magic-string-ast'
 
@@ -22,10 +23,10 @@ export function createSourceLocation(code: string) {
 export interface Script {
   ast: Program,
   magicString: MagicStringAST,
-  block: SFCScriptBlock,
+  block: SFCBlock,
 }
 
-export function parseScript(block: SFCScriptBlock | null): Script | undefined {
+export function parseScript(block: SFCBlock | null): Script | undefined {
   if (!block) return undefined
   const ast = babelParse(block.content, block.lang, {
     plugins: [['importAttributes', { deprecatedAssertSyntax: true }]],
@@ -35,5 +36,20 @@ export function parseScript(block: SFCScriptBlock | null): Script | undefined {
     ast,
     magicString,
     block,
+  }
+}
+
+export function visitNode(current: Node, fn: (node: Node) => void) {
+  fn(current)
+  const keys = VISITOR_KEYS[current.type] ?? []
+  for (const key of keys) {
+    const children = current[key]
+    if (Array.isArray(children)) {
+      children.forEach(child => {
+        visitNode(child, fn)
+      })
+    } else if (children) {
+      visitNode(children, fn)
+    }
   }
 }

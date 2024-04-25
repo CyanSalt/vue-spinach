@@ -6,8 +6,15 @@ module.exports = {
   parserOptions: {
     project: './tsconfig.tools.json',
   },
-  rules: {
-    'vue/match-component-file-name': 'off',
-    'vue/no-unused-properties': 'off',
-  },
+  overrides: [
+    {
+      files: ['tests/**/*.vue'],
+      rules: {
+        'sort-imports': 'off',
+        '@stylistic/ts/indent': 'off',
+        'vue/match-component-file-name': 'off',
+        'vue/no-unused-properties': 'off',
+      },
+    },
+  ],
 }
