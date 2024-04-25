@@ -30,9 +30,9 @@ export default defineSpinachPlugin({
   },
   *visitProperty({ name, source }, { factory }) {
     if (source === 'props') {
-      yield factory.code(`props.${name}`)
+      yield factory.replace(`props.${name}`)
     } else if (source === 'props (propsDestructure)') {
-      yield factory.code(name)
+      yield factory.replace(name)
     }
   },
 })

@@ -8,6 +8,7 @@ export interface BaseNode {
 export interface Code extends BaseNode {
   type: 'Code',
   content: string,
+  once: boolean,
 }
 
 export interface Import extends BaseNode {
@@ -23,19 +24,20 @@ export interface ThisProperty extends BaseNode {
   exposed: boolean,
 }
 
-export interface Preserve extends BaseNode {
-  type: 'Preserve',
+export interface Replacement extends BaseNode {
+  type: 'Replacement',
+  content: string,
 }
 
-export type TransformNode = Code | Import | ThisProperty | Preserve
+export type TransformNode = Code | Import | ThisProperty
 
-export type VisitNode = Code | Import
+export type VisitNode = Code | Import | Replacement
 
 export const factory = {
-  code: (content: string): Code => ({ type: 'Code', content }),
+  code: (content: string, once = false): Code => ({ type: 'Code', content, once }),
   imports: (from: string, imported: string): Import => ({ type: 'Import', from, imported }),
   thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({ type: 'ThisProperty', name, source, exposed }),
-  preserve: (): Preserve => ({ type: 'Preserve' }),
+  replace: (content: string): Replacement => ({ type: 'Replacement', content }),
 }
 
 export interface TransformOptions {

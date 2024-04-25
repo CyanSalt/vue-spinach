@@ -9,8 +9,10 @@ import transformData from './plugins/data'
 import transformDirectives from './plugins/directives'
 import transformLifecycles from './plugins/lifecycles'
 import transformMethods from './plugins/methods'
+import transformPinia from './plugins/pinia'
 import transformProps from './plugins/props'
 import transformSetup from './plugins/setup'
+import transformVueRouter from './plugins/vue-router'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 const defaultOptions: Required<TransformSFCOptions> = {
@@ -29,6 +31,8 @@ const builtinPlugins: Plugin[] = [
   transformComputed,
   transformLifecycles,
   transformMethods,
+  transformPinia,
+  transformVueRouter,
 ]
 
 function transformScript(
@@ -38,12 +42,13 @@ function transformScript(
   options: TransformOptions,
 ) {
   const baseScript = scriptSetup ?? script
+  // Step 1: options to compositions
   const vueOptions = getOptions(script.ast)
   if (!vueOptions) {
     return baseScript.magicString.toString()
   }
   const {
-    code,
+    code: optionsCode,
     imports: optionsImports,
     thisProperties,
     properties,
@@ -54,38 +59,37 @@ function transformScript(
       if (defineOptions) {
         appendOptions(defineOptions.object, scriptSetup.magicString, properties, script.magicString)
       } else {
-        code.push(createDefineOptions(properties, script.magicString))
+        optionsCode.push(createDefineOptions(properties, script.magicString))
       }
     }
-    if (code.length) {
-      prependStatements(scriptSetup.ast, scriptSetup.magicString, code)
+    if (optionsCode.length) {
+      prependStatements(scriptSetup.ast, scriptSetup.magicString, optionsCode)
     }
   } else if (options.scriptSetup) {
     if (properties.length) {
-      code.push(createDefineOptions(properties, script.magicString))
+      optionsCode.push(createDefineOptions(properties, script.magicString))
     }
-    replaceStatements(vueOptions.exports, script.magicString, code)
+    replaceStatements(vueOptions.exports, script.magicString, optionsCode)
   }
   addImports(baseScript.ast, baseScript.magicString, optionsImports)
+  // Step 2: traverse this[key]
+  const transformed = parseScript({
+    ...baseScript.block,
+    content: options.scriptSetup
+      ? baseScript.magicString.toString()
+      : optionsCode.join('\n\n'),
+  })!
+  const {
+    code: thisPropertiesCode,
+    imports: thisPropertiesImports,
+  } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, plugins)
+  if (thisPropertiesCode.length) {
+    prependStatements(transformed.ast, transformed.magicString, thisPropertiesCode)
+  }
+  addImports(transformed.ast, transformed.magicString, thisPropertiesImports)
   if (options.scriptSetup) {
-    const transformed = parseScript({
-      ...baseScript.block,
-      content: baseScript.magicString.toString(),
-    })!
-    const {
-      imports: thisPropertiesImports,
-    } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, plugins)
-    addImports(transformed.ast, transformed.magicString, thisPropertiesImports)
     return transformed.magicString.toString()
   } else {
-    const transformed = parseScript({
-      ...baseScript.block,
-      content: code.join('\n\n'),
-    })!
-    const {
-      imports: thisPropertiesImports,
-    } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, plugins)
-    addImports(transformed.ast, transformed.magicString, thisPropertiesImports)
     const returnCode = createSetupReturn(thisProperties)
     const setupBodyCode = transformed.magicString.toString()
     replaceStatements(

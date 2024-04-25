@@ -52,6 +52,7 @@ export function transformOptions(
   options: TransformOptions,
 ) {
   let code: string[] = []
+  let codeSet = new Set<string>()
   let thisProperties: ThisProperty[] = []
   let imports: Record<string, string[]> = {}
   const properties = optionsObject.reduce<typeof optionsObject>(
@@ -67,7 +68,6 @@ export function transformOptions(
         const node = getPropertyValue(property)
         const context = { name, node, magicString, options }
         const matchedPlugins = plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
-        let shouldPreserve = !matchedPlugins.length
         for (const plugin of matchedPlugins) {
           let lines: string[] = []
           const helpers: TransformHelpers = { factory, transform: undefined as never }
@@ -75,20 +75,22 @@ export function transformOptions(
           for (const item of plugin.transform!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                lines.push(item.content)
+                if (!item.once || !codeSet.has(item.content)) {
+                  lines.push(item.content)
+                  codeSet.add(item.content)
+                }
                 break
               case 'Import':
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (!imports[item.from]) {
                   imports[item.from] = []
                 }
-                imports[item.from].push(item.imported)
+                if (!imports[item.from].includes(item.imported)) {
+                  imports[item.from].push(item.imported)
+                }
                 break
               case 'ThisProperty':
                 thisProperties.push(item)
-                break
-              case 'Preserve':
-                shouldPreserve = true
                 break
             }
           }
@@ -96,7 +98,7 @@ export function transformOptions(
             code.push(lines.join('\n'))
           }
         }
-        if (!shouldPreserve) {
+        if (matchedPlugins.length) {
           return preserved
         }
       }
@@ -119,6 +121,8 @@ export function transformThisProperties(
   thisProperties: ThisProperty[],
   plugins: Plugin[],
 ) {
+  let code: string[] = []
+  let codeSet = new Set<string>()
   let imports: Record<string, string[]> = {}
   const matchedPlugins = plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
@@ -131,30 +135,43 @@ export function transformThisProperties(
         const source = thisProperties.find(item => item.name === name)?.source
         const context = { name, node, magicString, source }
         const helpers = { factory }
-        let code: string | undefined
+        let replacement: string | undefined
         for (const plugin of matchedPlugins) {
+          let lines: string[] = []
           for (const item of plugin.visitProperty!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                code = item.content
+                if (!item.once || !codeSet.has(item.content)) {
+                  lines.push(item.content)
+                  codeSet.add(item.content)
+                }
                 break
               case 'Import':
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (!imports[item.from]) {
                   imports[item.from] = []
                 }
-                imports[item.from].push(item.imported)
+                if (!imports[item.from].includes(item.imported)) {
+                  imports[item.from].push(item.imported)
+                }
+                break
+              case 'Replacement':
+                replacement = item.content
                 break
             }
           }
+          if (lines.length) {
+            code.push(lines.join('\n'))
+          }
         }
-        if (code !== undefined) {
-          magicString.overwriteNode(node, code)
+        if (replacement !== undefined) {
+          magicString.overwriteNode(node, replacement)
         }
       }
     })
   }
   return {
+    code,
     imports,
   }
 }

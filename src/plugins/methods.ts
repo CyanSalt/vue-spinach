@@ -20,7 +20,7 @@ export default defineSpinachPlugin({
   },
   *visitProperty({ name, source }, { factory }) {
     if (source === 'computed') {
-      yield factory.code(name)
+      yield factory.replace(name)
     }
   },
 })
