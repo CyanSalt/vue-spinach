@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -23,6 +23,10 @@ const msg = ref('')
 const formatted = computed(() => {
       return prefix + msg.value + suffix.value
     })
+
+onMounted(() => {
+    msg.value = 'hello'
+  })
 
 function reset() {
       msg.value = ''

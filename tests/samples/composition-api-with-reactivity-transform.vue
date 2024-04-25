@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -23,6 +23,10 @@ let msg = $ref('')
 const formatted = $computed(() => {
       return prefix + msg + suffix.value
     })
+
+onMounted(() => {
+    msg = 'hello'
+  })
 
 function reset() {
       msg = ''

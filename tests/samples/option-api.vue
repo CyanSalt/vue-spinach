@@ -40,6 +40,9 @@ export default {
       return this.prefix + this.msg + this.suffix
     },
   },
+  mounted() {
+    this.msg = 'hello'
+  },
   methods: {
     reset() {
       this.msg = ''

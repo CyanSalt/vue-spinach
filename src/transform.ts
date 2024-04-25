@@ -231,7 +231,7 @@ export function addImports(ast: Program, magicString: MagicStringAST, imports: R
         magicString.overwriteNode(
           decls[0].specifiers,
           magicString.sliceNode(decls[0].specifiers)
-            + missingSpecifiers.map(name => `, ${name}`),
+            + missingSpecifiers.map(name => `, ${name}`).join(''),
         )
       }
     } else {

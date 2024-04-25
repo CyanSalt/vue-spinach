@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -25,6 +25,10 @@ export default {
     const formatted = computed(() => {
           return props.prefix + msg.value + suffix.value
         })
+
+    onMounted(() => {
+        msg.value = 'hello'
+      })
 
     function reset() {
           msg.value = ''
