@@ -3,22 +3,36 @@ import parseArgs from 'minimist'
 import type { TransformOptions } from '.'
 import { transformSFC } from '.'
 
+async function read(stream: NodeJS.ReadableStream) {
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) {
+    chunks.push(chunk as Buffer)
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
 async function main() {
-  const args = parseArgs(process.argv.slice(2))
+  const args = parseArgs<{
+    print?: boolean,
+    out?: string,
+    config?: string,
+  }>(process.argv.slice(2))
   const inputFile = args._[0]
-  if (!inputFile) {
-    console.error('Usage: vue-spinach <inFile> [--out outFile] [--config configFile]')
-    process.exitCode = 1
+  const inputPromise = inputFile
+    ? fs.promises.readFile(inputFile, 'utf8')
+    : read(process.stdin)
+  let config: TransformOptions | undefined
+  if (args.config) {
+    const { default: importedConfig } = await import(args.config)
+    config = importedConfig
+  }
+  const input = await inputPromise
+  const output = transformSFC(input, config)
+  const outFile = args.print ? undefined : (args.out ?? inputFile)
+  if (outFile) {
+    await fs.promises.writeFile(outFile, output)
   } else {
-    const inputPromise = fs.promises.readFile(inputFile, 'utf8')
-    let config: TransformOptions | undefined
-    if (args.config) {
-      const { default: importedConfig } = await import(args.config)
-      config = importedConfig
-    }
-    const input = await inputPromise
-    const output = transformSFC(input, config)
-    await fs.promises.writeFile(args.out ?? inputFile, output)
+    process.stdout.write(output + '\n')
   }
 }
 

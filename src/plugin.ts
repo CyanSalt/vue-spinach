@@ -41,10 +41,33 @@ export const factory = {
 }
 
 export interface TransformOptions {
+  /**
+   * Whether to generate <script setup> block.
+   * @default true
+   */
   scriptSetup: boolean,
+  /**
+   * Whether to generate code using [Reactivity Transform]{@link https://vue-macros.dev/features/reactivity-transform.html}.
+   * @default false
+   */
   reactivityTransform: boolean,
+  /**
+   * Whether to destructure props defined by `defineProps`.
+   * Only valid when `scriptSetup` is `true`.
+   * @default true
+   */
   propsDestructure: boolean,
+  /**
+   * Specifies a mapping of import names.
+   * For example `{ 'vue-router': 'vue-router-v4' }`.
+   * @default {}
+   */
   aliases: Record<string, string>,
+  /**
+   * Specifies additional plugins.
+   * Plugins that transform Vue's built-in options are always enabled.
+   * @default [...builtinPlugins]
+   */
   plugins: Plugin[],
 }
 
