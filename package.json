@@ -14,7 +14,7 @@
     }
   },
   "bin": {
-    "vue-spinach": "./dist/cli.cjs"
+    "vue-spinach": "./dist/cli.mjs"
   },
   "scripts": {
     "lint": "eslint --ignore-path .gitignore --fix --ext .js,.ts,.vue .",
@@ -37,23 +37,23 @@
   },
   "homepage": "https://github.com/CyanSalt/vue-spinach#readme",
   "devDependencies": {
-    "@babel/types": "^7.24.0",
     "@cyansalt/eslint-config-preset": "^1.18.0",
     "@cyansalt/tsconfig": "^2.2.1",
-    "@types/lodash": "^4.17.0",
+    "@types/lodash-es": "^4.17.12",
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.12.7",
     "@vue-macros/reactivity-transform": "^0.4.4",
     "eslint": "^8.57.0",
+    "lodash-es": "^4.17.21",
     "typescript": "^5.4.5",
     "unbuild": "^2.0.0",
     "vitest": "^1.5.0",
     "vue": "^3.4.24"
   },
   "dependencies": {
+    "@babel/types": "^7.24.0",
     "@vue/compiler-sfc": "^3.4.24",
     "ast-kit": "^0.12.1",
-    "lodash": "^4.17.21",
     "magic-string-ast": "^0.5.0",
     "minimist": "^1.2.8"
   }

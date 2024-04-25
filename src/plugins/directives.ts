@@ -1,4 +1,4 @@
-import { camelCase } from 'lodash'
+import { camelCase } from 'lodash-es'
 import { defineSpinachPlugin } from '../plugin'
 import { getProperties } from '../transform'
 

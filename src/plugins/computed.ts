@@ -12,7 +12,7 @@ export default defineSpinachPlugin({
       let hasComputed = false
       for (const [key, value] of Object.entries(properties)) {
         const argCode = value.type === 'ObjectMethod'
-          ? `(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(value.body)}`
+          ? `${value.async ? 'async ' : ''}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(value.body)}`
           : magicString.sliceNode(value)
         if (options.reactivityTransform) {
           yield factory.thisProperty(key, 'computed (reactivityTransform)')

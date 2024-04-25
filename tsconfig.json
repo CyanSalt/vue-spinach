@@ -6,7 +6,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "target": "ESNext",
-    "module": "ES2020"
+    "module": "ESNext"
   },
   "include": [
     "src"

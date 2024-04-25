@@ -11,7 +11,7 @@ export default defineSpinachPlugin({
       for (const [key, value] of Object.entries(properties)) {
         yield factory.thisProperty(key, 'methods')
         if (value.type === 'ObjectMethod' || value.type === 'FunctionExpression') {
-          yield factory.code(`function ${key}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) ${magicString.sliceNode(value.body)}`)
+          yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) ${magicString.sliceNode(value.body)}`)
         } else {
           yield factory.code(`const ${key} = ${magicString.sliceNode(value)})`)
         }
