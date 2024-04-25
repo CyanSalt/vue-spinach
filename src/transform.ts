@@ -2,7 +2,7 @@ import type { BlockStatement, CallExpression, ExportDefaultDeclaration, Expressi
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import type { MagicStringAST } from 'magic-string-ast'
 import { visitNode } from './ast'
-import type { Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
+import type { ThisProperty, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 
 export function getOptions(ast: Program) {
@@ -48,7 +48,6 @@ function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyVa
 export function transformOptions(
   optionsObject: ObjectExpression['properties'],
   magicString: MagicStringAST,
-  plugins: Plugin[],
   options: TransformOptions,
 ) {
   let code: string[] = []
@@ -67,7 +66,7 @@ export function transformOptions(
         const name = resolveString(property.key)
         const node = getPropertyValue(property)
         const context = { name, node, magicString, options }
-        const matchedPlugins = plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
+        const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         for (const plugin of matchedPlugins) {
           let lines: string[] = []
           const helpers: TransformHelpers = { factory, transform: undefined as never }
@@ -80,15 +79,17 @@ export function transformOptions(
                   codeSet.add(item.content)
                 }
                 break
-              case 'Import':
+              case 'Import': {
+                const importSource = options.aliases[item.from] ?? item.from
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (!imports[item.from]) {
-                  imports[item.from] = []
+                if (!imports[importSource]) {
+                  imports[importSource] = []
                 }
-                if (!imports[item.from].includes(item.imported)) {
-                  imports[item.from].push(item.imported)
+                if (!imports[importSource].includes(item.imported)) {
+                  imports[importSource].push(item.imported)
                 }
                 break
+              }
               case 'ThisProperty':
                 thisProperties.push(item)
                 break
@@ -119,12 +120,12 @@ export function transformThisProperties(
   ast: Program,
   magicString: MagicStringAST,
   thisProperties: ThisProperty[],
-  plugins: Plugin[],
+  options: TransformOptions,
 ) {
   let code: string[] = []
   let codeSet = new Set<string>()
   let imports: Record<string, string[]> = {}
-  const matchedPlugins = plugins.filter(plugin => plugin.visitProperty)
+  const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
     visitNode(ast, node => {
       if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' && (
@@ -146,15 +147,17 @@ export function transformThisProperties(
                   codeSet.add(item.content)
                 }
                 break
-              case 'Import':
+              case 'Import': {
+                const importSource = options.aliases[item.from] ?? item.from
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (!imports[item.from]) {
-                  imports[item.from] = []
+                if (!imports[importSource]) {
+                  imports[importSource] = []
                 }
-                if (!imports[item.from].includes(item.imported)) {
-                  imports[item.from].push(item.imported)
+                if (!imports[importSource].includes(item.imported)) {
+                  imports[importSource].push(item.imported)
                 }
                 break
+              }
               case 'Replacement':
                 replacement = item.content
                 break

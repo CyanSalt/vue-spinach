@@ -44,6 +44,8 @@ export interface TransformOptions {
   scriptSetup: boolean,
   reactivityTransform: boolean,
   propsDestructure: boolean,
+  aliases: Record<string, string>,
+  plugins: Plugin[],
 }
 
 export interface TransformContext {

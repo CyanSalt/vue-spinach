@@ -15,11 +15,9 @@ import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
-const defaultOptions: Required<TransformSFCOptions> = {
-  scriptSetup: true,
-  reactivityTransform: false,
-  propsDestructure: true,
-  plugins: [],
+export type {
+  Plugin,
+  TransformOptions,
 }
 
 const builtinPlugins: Plugin[] = [
@@ -38,7 +36,6 @@ const builtinPlugins: Plugin[] = [
 function transformScript(
   script: Script,
   scriptSetup: Script | undefined,
-  plugins: Plugin[],
   options: TransformOptions,
 ) {
   const baseScript = scriptSetup ?? script
@@ -52,7 +49,7 @@ function transformScript(
     imports: optionsImports,
     thisProperties,
     properties,
-  } = transformOptions(vueOptions.object.properties, script.magicString, plugins, options)
+  } = transformOptions(vueOptions.object.properties, script.magicString, options)
   if (scriptSetup) {
     if (properties.length) {
       const defineOptions = getDefineOptions(scriptSetup.ast)
@@ -82,7 +79,7 @@ function transformScript(
   const {
     code: thisPropertiesCode,
     imports: thisPropertiesImports,
-  } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, plugins)
+  } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, options)
   if (thisPropertiesCode.length) {
     prependStatements(transformed.ast, transformed.magicString, thisPropertiesCode)
   }
@@ -101,24 +98,29 @@ function transformScript(
   }
 }
 
-export interface TransformSFCOptions extends Partial<TransformOptions> {
-  plugins?: Plugin[],
+const defaultOptions: Required<TransformOptions> = {
+  scriptSetup: true,
+  reactivityTransform: false,
+  propsDestructure: true,
+  aliases: {},
+  plugins: builtinPlugins,
 }
 
-export function transformSFC(code: string, options?: TransformSFCOptions) {
-  const {
-    plugins,
-    ...pluginOptions
-  } = { ...defaultOptions, ...options }
-  const allPlugins = [...builtinPlugins, ...plugins]
+export function transformSFC(code: string, userOptions?: Partial<TransformOptions>) {
+  const options = {
+    ...defaultOptions,
+    ...userOptions,
+    aliases: { ...defaultOptions.aliases, ...userOptions?.aliases },
+    plugins: [...defaultOptions.plugins, ...(userOptions?.plugins ?? [])],
+  }
   const { descriptor } = parse(code, {
     filename: `sfc.vue#${JSON.stringify(options)}`,
   })
   const parsedScript = parseScript(descriptor.script)
   const parsedScriptSetup = parseScript(descriptor.scriptSetup)
-  if (pluginOptions.scriptSetup) {
+  if (options.scriptSetup) {
     if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, pluginOptions)
+      const content = transformScript(parsedScript, parsedScriptSetup, options)
       if (descriptor.scriptSetup) {
         descriptor.scriptSetup.content = content
       } else {
@@ -136,7 +138,7 @@ export function transformSFC(code: string, options?: TransformSFCOptions) {
       throw new Error('Could not transform with an existing <script setup> tag when "scriptSetup" is set to false.')
     }
     if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, allPlugins, pluginOptions)
+      const content = transformScript(parsedScript, parsedScriptSetup, options)
       descriptor.script!.content = content
     }
   }
