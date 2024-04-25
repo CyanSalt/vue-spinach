@@ -6,7 +6,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'data'
   },
-  *transform({ node, magicString }, { factory, transform }) {
+  *transform({ node, magicString, options }, { factory, transform }) {
     if (node.type === 'FunctionExpression' || node.type === 'ObjectMethod') {
       const stmts = node.body.body
       const returnStmt = stmts.find((child): child is ReturnStatement => child.type === 'ReturnStatement')
@@ -27,18 +27,25 @@ export default defineSpinachPlugin({
       const properties = getProperties(node)
       let hasRef = false
       for (const [key, value] of Object.entries(properties)) {
-        hasRef = true
-        yield factory.thisProperty(key, 'data')
-        yield factory.code(`const ${key} = ref(${magicString.sliceNode(value)})`)
+        if (options.reactivityTransform) {
+          yield factory.thisProperty(key, 'data (reactivityTransform)')
+          yield factory.code(`let ${key} = $ref(${magicString.sliceNode(value)})`)
+        } else {
+          hasRef = true
+          yield factory.thisProperty(key, 'data')
+          yield factory.code(`const ${key} = ref(${magicString.sliceNode(value)})`)
+        }
       }
       if (hasRef) {
         yield factory.imports('vue', 'ref')
       }
     }
   },
-  *visitProperty({ name, properties }, { factory }) {
-    if (properties.some(item => item.name === name && item.source === 'data')) {
+  *visitProperty({ name, source }, { factory }) {
+    if (source === 'data') {
       yield factory.code(`${name}.value`)
+    } else if (source === 'data (reactivityTransform)') {
+      yield factory.code(name)
     }
   },
 })

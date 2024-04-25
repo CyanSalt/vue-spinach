@@ -2,7 +2,7 @@ import type { CallExpression, ExportDefaultDeclaration, ExpressionStatement, Imp
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import type { MagicStringAST } from 'magic-string-ast'
 import { visitNode } from './ast'
-import type { Plugin, ThisProperty, TransformHelpers } from './plugin'
+import type { Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 
 export function getOptions(ast: Program) {
@@ -46,14 +46,15 @@ function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyVa
 }
 
 export function transformOptions(
-  options: ObjectExpression['properties'],
+  optionsObject: ObjectExpression['properties'],
   magicString: MagicStringAST,
   plugins: Plugin[],
+  options: TransformOptions,
 ) {
   let code: string[] = []
   let thisProperties: ThisProperty[] = []
   let imports: Record<string, string[]> = {}
-  const properties = options.reduce<typeof options>(
+  const properties = optionsObject.reduce<typeof optionsObject>(
     (preserved, property) => {
       if ((
         property.type === 'ObjectProperty'
@@ -64,11 +65,11 @@ export function transformOptions(
       )) {
         const name = resolveString(property.key)
         const node = getPropertyValue(property)
-        const context = { name, node, magicString }
+        const context = { name, node, magicString, options }
         const matchedPlugins = plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         for (const plugin of matchedPlugins) {
           let lines: string[] = []
-          const helpers = { factory } as TransformHelpers
+          const helpers: TransformHelpers = { factory, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
           for (const item of plugin.transform!(context, helpers)) {
             switch (item.type) {
@@ -111,7 +112,7 @@ export function transformOptions(
 export function transformThisProperties(
   ast: Program,
   magicString: MagicStringAST,
-  properties: ThisProperty[],
+  thisProperties: ThisProperty[],
   plugins: Plugin[],
 ) {
   let imports: Record<string, string[]> = {}
@@ -123,7 +124,8 @@ export function transformThisProperties(
         || isLiteralType(node.property)
       )) {
         const name = resolveString(node.property)
-        const context = { name, node, magicString, properties }
+        const source = thisProperties.find(item => item.name === name)?.source
+        const context = { name, node, magicString, source }
         const helpers = { factory }
         let code: string | undefined
         for (const plugin of matchedPlugins) {
@@ -163,6 +165,17 @@ export function appendOptions(defineOptions: ObjectExpression, magicString: Magi
 
 export function createDefineOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST) {
   return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},`).join('\n')}\n})`
+}
+
+export function createSetupReturn(properties: ThisProperty[]) {
+  return `return {\n${properties.map(property => `  ${property.name},\n`).join('')}}`
+}
+
+export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
+  return `export default {\n${[
+    ...properties.map(property => `  ${magicString.sliceNode(property)},`),
+    `  setup() {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
+  ].join('\n')}\n}`
 }
 
 function getLastImports(ast: Program) {

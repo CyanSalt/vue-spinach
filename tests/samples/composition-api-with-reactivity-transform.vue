@@ -4,21 +4,21 @@ import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
 import MyClick from '/path/to/MyClick'
 
-defineOptions({
-  name: 'Foo',
-})
-
 const vMyClick = MyClick
 
 let msg = $ref('')
 
 const formatted = $computed(() => {
-  return msg.trim()
-})
+      return msg.trim()
+    })
 
 function reset() {
-  msg = ''
-}
+      msg = ''
+    }
+
+defineOptions({
+  name: 'Foo',
+})
 </script>
 
 <template>

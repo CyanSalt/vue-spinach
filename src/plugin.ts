@@ -32,17 +32,23 @@ export const factory = {
   thisProperty: (name: string, source: string): ThisProperty => ({ type: 'ThisProperty', name, source }),
 }
 
+export interface TransformOptions {
+  scriptSetup: boolean,
+  reactivityTransform: boolean,
+}
+
 export interface TransformContext {
   name: string,
   node: Node,
   magicString: MagicStringAST,
+  options: TransformOptions,
 }
 
 export interface VisitContext {
   name: string,
   node: MemberExpression,
   magicString: MagicStringAST,
-  properties: ThisProperty[],
+  source: string | undefined,
 }
 
 export interface TransformHelpers {

@@ -14,13 +14,11 @@ describe('transformSFC', () => {
       path.join(import.meta.dirname, './samples/composition-api.vue'),
       'utf-8',
     )
-    const result = transformSFC(codeInOptionAPI, {
-      format: 'composition',
-    })
+    const result = transformSFC(codeInOptionAPI)
     expect(result).toBe(codeInCompositionAPI)
   })
 
-  test.skip('transform Vue SFC into Composition API without script setup', async () => {
+  test.only('transform Vue SFC into Composition API without script setup', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
       path.join(import.meta.dirname, './samples/option-api.vue'),
       'utf-8',
@@ -30,13 +28,12 @@ describe('transformSFC', () => {
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI, {
-      format: 'composition',
       scriptSetup: false,
     })
     expect(result).toBe(codeInCompositionAPIWithoutScriptSetup)
   })
 
-  test.skip('transform Vue SFC into Composition API with reactivity transform', async () => {
+  test('transform Vue SFC into Composition API with reactivity transform', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
       path.join(import.meta.dirname, './samples/option-api.vue'),
       'utf-8',
@@ -46,7 +43,6 @@ describe('transformSFC', () => {
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI, {
-      format: 'composition',
       reactivityTransform: true,
     })
     expect(result).toBe(codeInCompositionAPIWithReactivityTransform)

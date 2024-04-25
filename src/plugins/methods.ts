@@ -18,9 +18,9 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, properties }, { factory }) {
-    if (properties.some(item => item.name === name && item.source === 'methods')) {
-      yield factory.code(`${name}`)
+  *visitProperty({ name, source }, { factory }) {
+    if (source === 'computed') {
+      yield factory.code(name)
     }
   },
 })

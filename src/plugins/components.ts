@@ -3,8 +3,8 @@ import { defineSpinachPlugin } from '../plugin'
 import { getProperties } from '../transform'
 
 export default defineSpinachPlugin({
-  transformInclude({ name }) {
-    return name === 'components'
+  transformInclude({ name, options }) {
+    return options.scriptSetup && name === 'components'
   },
   *transform({ node, magicString }, { factory }) {
     if (node.type === 'ObjectExpression') {
