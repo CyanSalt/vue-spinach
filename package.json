@@ -1,6 +1,6 @@
 {
   "name": "vue-spinach",
-  "version": "0.1.0-0",
+  "version": "0.1.0-beta.0",
   "description": "Transform Vue SFC between Option API and Composition API",
   "type": "module",
   "main": "./dist/index.cjs",
