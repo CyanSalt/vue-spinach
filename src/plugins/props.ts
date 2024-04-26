@@ -39,6 +39,8 @@ export default defineSpinachPlugin({
       } else {
         yield factory.code(`const props = defineProps(${magicString.sliceNode(node)})`, factory.priority.interface)
       }
+    } else {
+      yield factory.replace(false)
     }
   },
   *visitProperty({ name, source }, { factory }) {

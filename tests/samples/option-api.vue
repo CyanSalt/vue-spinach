@@ -34,6 +34,7 @@ export default {
       default: 'my:',
     },
   },
+  emits: ['reset'],
   setup() {
     const suffix = ref('()')
 
@@ -67,6 +68,7 @@ export default {
       if (this.type) {
         this.msg = ''
       }
+      this.$emit('reset', this.msg)
     },
   },
 }

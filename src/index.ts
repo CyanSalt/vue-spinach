@@ -7,6 +7,7 @@ import transformComponents from './plugins/components'
 import transformComputed from './plugins/computed'
 import transformData from './plugins/data'
 import transformDirectives from './plugins/directives'
+import transformEmits from './plugins/emits'
 import transformInject from './plugins/inject'
 import transformLifecycles from './plugins/lifecycles'
 import transformMethods from './plugins/methods'
@@ -31,6 +32,7 @@ const builtinPlugins: Plugin[] = [
   transformProvide,
   transformInject,
   transformProps,
+  transformEmits,
   transformSetup,
   transformData,
   transformComputed,

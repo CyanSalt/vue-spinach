@@ -16,6 +16,8 @@ const props = defineProps({
     },
   })
 
+const emit = defineEmits(['reset'])
+
 const suffix = ref('()')
 
 const msg = ref('')
@@ -28,6 +30,7 @@ function reset() {
       if (type.value) {
         msg.value = ''
       }
+      emit('reset', msg.value)
     }
 
 provide('msg', msg.value)

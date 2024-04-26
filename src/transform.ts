@@ -141,6 +141,7 @@ export function transformOptions(
         const node = getPropertyValue(property)
         const context = { name, node, magicString, options }
         const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
+        let replacement: string | false = matchedPlugins.length ? '' : false
         for (const plugin of matchedPlugins) {
           const helpers: TransformHelpers = { factory, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
@@ -163,13 +164,16 @@ export function transformOptions(
               case 'Declaration':
                 addCodeDeclaration(manager, plugin, item)
                 break
+              case 'Replacement':
+                replacement = item.content
+                break
               case 'ThisProperty':
                 thisProperties.push(item)
                 break
             }
           }
         }
-        if (matchedPlugins.length) {
+        if (replacement !== false) {
           return preserved
         }
       }
@@ -205,7 +209,7 @@ export function transformThisProperties(
         const source = thisProperties.find(item => item.name === name)?.source
         const context = { name, node, magicString, source }
         const helpers = { factory }
-        let replacement: string | undefined
+        let replacement: string | false = false
         for (const plugin of matchedPlugins) {
           for (const item of plugin.visitProperty!(context, helpers)) {
             switch (item.type) {
@@ -232,7 +236,7 @@ export function transformThisProperties(
             }
           }
         }
-        if (replacement !== undefined) {
+        if (replacement !== false) {
           magicString.overwriteNode(node, replacement)
         }
       }
@@ -268,7 +272,7 @@ export function createSetupReturn(properties: ThisProperty[]) {
 export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
   return `export default {\n${[
     ...properties.map(property => `  ${magicString.sliceNode(property)},`),
-    `  setup(props) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
+    `  setup(props, { attrs, slots, emit, expose }) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
   ].join('\n')}\n}`
 }
 

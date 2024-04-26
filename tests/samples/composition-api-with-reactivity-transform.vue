@@ -18,6 +18,8 @@ const {
     },
   })
 
+const emit = defineEmits(['reset'])
+
 const suffix = ref('()')
 
 let msg = $ref('')
@@ -30,6 +32,7 @@ function reset() {
       if (type) {
         msg = ''
       }
+      emit('reset', msg)
     }
 
 provide('msg', msg)

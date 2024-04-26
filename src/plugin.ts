@@ -49,10 +49,10 @@ export interface ThisProperty extends BaseNode {
 
 export interface Replacement extends BaseNode {
   type: 'Replacement',
-  content: string,
+  content: string | false,
 }
 
-export type TransformNode = Code | Import | Declaration | ThisProperty
+export type TransformNode = Code | Import | Declaration | Replacement | ThisProperty
 
 export type VisitNode = Code | Import | Declaration | Replacement
 
@@ -82,7 +82,7 @@ export const factory = {
     source,
     exposed,
   }),
-  replace: (content: string): Replacement => ({
+  replace: (content: string | false): Replacement => ({
     type: 'Replacement',
     content,
   }),

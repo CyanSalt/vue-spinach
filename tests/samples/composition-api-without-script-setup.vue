@@ -17,7 +17,14 @@ export default {
   directives: {
     'my-click': MyClick,
   },
-  setup(props) {
+  props: {
+    prefix: {
+      type: String,
+      default: 'my:',
+    },
+  },
+  emits: ['reset'],
+  setup(props, { attrs, slots, emit, expose }) {
     const type = inject('typeCtx', 'normal')
 
     const suffix = ref('()')
@@ -32,6 +39,7 @@ export default {
           if (type.value) {
             msg.value = ''
           }
+          emit('reset', msg.value)
         }
 
     provide('msg', msg.value)
