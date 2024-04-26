@@ -37,6 +37,10 @@ function reset() {
 
 provide('msg', msg)
 
+defineExpose({
+  reset,
+})
+
 watch(() => suffix.value, async (value) => {
         reset()
       }, {

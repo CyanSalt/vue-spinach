@@ -44,6 +44,10 @@ export default {
 
     provide('msg', msg.value)
 
+    expose({
+      reset,
+    })
+
     watch(() => suffix.value, async (value) => {
             reset()
           }, {

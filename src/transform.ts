@@ -257,7 +257,7 @@ export function appendOptions(defineOptions: ObjectExpression, magicString: Magi
 }
 
 export function createDefineOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST) {
-  return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},`).join('\n')}\n})`
+  return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},\n`).join('')}})`
 }
 
 export function createSetupReturn(properties: ThisProperty[]) {

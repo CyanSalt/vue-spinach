@@ -35,6 +35,7 @@ export default {
     },
   },
   emits: ['reset'],
+  expose: ['reset'],
   setup() {
     const suffix = ref('()')
 
