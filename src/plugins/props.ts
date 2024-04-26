@@ -1,3 +1,4 @@
+import { isLiteralType, resolveString } from 'ast-kit'
 import { defineSpinachPlugin } from '../plugin'
 import { getProperties } from '../transform'
 
@@ -15,6 +16,18 @@ export default defineSpinachPlugin({
           yield factory.thisProperty(key, 'props (propsDestructure)', false)
         } else {
           yield factory.thisProperty(key, 'props', false)
+        }
+      }
+    } else if (node.type === 'ArrayExpression') {
+      for (const element of node.elements) {
+        if (isLiteralType(element)) {
+          const key = resolveString(element)
+          if (options.scriptSetup && options.propsDestructure) {
+            destructuredProps.push(key)
+            yield factory.thisProperty(key, 'props (propsDestructure)', false)
+          } else {
+            yield factory.thisProperty(key, 'props', false)
+          }
         }
       }
     }
