@@ -30,7 +30,7 @@ export default defineSpinachPlugin({
             ? 'onUnmounted'
             : camelCase(`on-${name}`)
         )
-      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${node.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(node.body)})`)
+      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${node.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(node.body)})`, factory.priority.effect)
       yield factory.imports('vue', funcName)
     }
   },

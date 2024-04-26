@@ -15,7 +15,7 @@ export default defineSpinachPlugin({
           ? value.name
           : undefined
         if (variableName !== name) {
-          yield factory.code(`const ${name} = ${magicString.sliceNode(value)}`)
+          yield factory.code(`const ${name} = ${magicString.sliceNode(value)}`, factory.priority.dependency)
         }
       }
     }

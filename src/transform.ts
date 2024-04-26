@@ -1,5 +1,6 @@
 import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement } from '@babel/types'
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
+import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
 import { visitNode } from './ast'
 import type { Code, Declaration, Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
@@ -96,7 +97,10 @@ function addCodeDeclaration(manager: PluginCodeManager, plugin: Plugin, item: De
 }
 
 function generateCode(manager: PluginCodeManager) {
-  return Array.from(manager.values()).sort((a, b) => a.priority - b.priority).map(data => {
+  return sortBy(
+    Array.from(manager.values()),
+    data => (data.lines.length ? data.priority / data.lines.length : 0),
+  ).map(data => {
     const codeLines = [
       ...Object.entries(data.decls).flatMap(([declSource, decl]) => {
         let currentLines: string[] = []

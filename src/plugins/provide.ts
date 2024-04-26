@@ -37,7 +37,7 @@ export default defineSpinachPlugin({
             key.type === 'Identifier'
               ? `'${magicString.sliceNode(key)}'`
               : magicString.sliceNode(key)
-          }, ${magicString.sliceNode(value)})`, 1)
+          }, ${magicString.sliceNode(value)})`, factory.priority.effect)
         }
       }
       if (hasProvide) {

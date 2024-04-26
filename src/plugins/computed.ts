@@ -16,11 +16,11 @@ export default defineSpinachPlugin({
           : magicString.sliceNode(value)
         if (options.reactivityTransform) {
           yield factory.thisProperty(key, 'computed (reactivityTransform)')
-          yield factory.code(`${isFunctionType(value) ? 'const' : 'let'} ${key} = $computed(${argCode})`)
+          yield factory.code(`${isFunctionType(value) ? 'const' : 'let'} ${key} = $computed(${argCode})`, factory.priority.derived)
         } else {
           hasComputed = true
           yield factory.thisProperty(key, 'computed')
-          yield factory.code(`const ${key} = computed(${argCode})`)
+          yield factory.code(`const ${key} = computed(${argCode})`, factory.priority.derived)
         }
       }
       if (hasComputed) {

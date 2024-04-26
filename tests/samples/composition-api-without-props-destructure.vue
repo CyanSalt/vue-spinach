@@ -22,15 +22,15 @@ const formatted = computed(() => {
       return props.prefix + msg.value + suffix.value
     })
 
-onMounted(() => {
-    msg.value = 'hello'
-  })
-
 function reset() {
       msg.value = ''
     }
 
 provide('msg', msg.value)
+
+onMounted(() => {
+    msg.value = 'hello'
+  })
 
 defineOptions({
   name: 'Foo',

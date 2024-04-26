@@ -24,15 +24,15 @@ const formatted = $computed(() => {
       return prefix + msg + suffix.value
     })
 
-onMounted(() => {
-    msg = 'hello'
-  })
-
 function reset() {
       msg = ''
     }
 
 provide('msg', msg)
+
+onMounted(() => {
+    msg = 'hello'
+  })
 
 defineOptions({
   name: 'Foo',
