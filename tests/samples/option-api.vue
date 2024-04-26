@@ -17,6 +17,11 @@ export default {
   directives: {
     'my-click': MyClick,
   },
+  provide() {
+    return {
+      msg: this.msg,
+    }
+  },
   props: {
     prefix: {
       type: String,

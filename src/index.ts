@@ -11,6 +11,7 @@ import transformLifecycles from './plugins/lifecycles'
 import transformMethods from './plugins/methods'
 import transformPinia from './plugins/pinia'
 import transformProps from './plugins/props'
+import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
@@ -25,6 +26,7 @@ export { defineSpinachPlugin } from './plugin'
 const builtinPlugins: Plugin[] = [
   transformComponents,
   transformDirectives,
+  transformProvide,
   transformProps,
   transformSetup,
   transformData,

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, provide, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -31,6 +31,8 @@ onMounted(() => {
 function reset() {
       msg = ''
     }
+
+provide('msg', msg)
 
 defineOptions({
   name: 'Foo',

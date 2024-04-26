@@ -41,7 +41,7 @@ export function getDefineOptions(ast: Program) {
 
 export type ObjectPropertyValueLike = ObjectProperty['value'] | ObjectMethod
 
-function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyValueLike {
+export function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyValueLike {
   return node.type === 'ObjectProperty' ? node.value : node
 }
 
@@ -52,6 +52,7 @@ type PluginCodeManager = Map<Plugin, {
     names: string[],
     constant: boolean,
   }>,
+  priority: number,
 }>
 
 function createPluginCodeManager(): PluginCodeManager {
@@ -62,20 +63,22 @@ function createPluginCodeManager(): PluginCodeManager {
       names: string[],
       constant: boolean,
     }>,
+    priority: 0,
   }>()
 }
 
 function addCodeLine(manager: PluginCodeManager, plugin: Plugin, item: Code) {
   if (!manager.has(plugin)) {
-    manager.set(plugin, { lines: [], decls: {} })
+    manager.set(plugin, { lines: [], decls: {}, priority: 0 })
   }
   const data = manager.get(plugin)!
   data.lines.push(item.content)
+  data.priority += item.priority
 }
 
 function addCodeDeclaration(manager: PluginCodeManager, plugin: Plugin, item: Declaration) {
   if (!manager.has(plugin)) {
-    manager.set(plugin, { lines: [], decls: {} })
+    manager.set(plugin, { lines: [], decls: {}, priority: 0 })
   }
   const data = manager.get(plugin)!
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -93,7 +96,7 @@ function addCodeDeclaration(manager: PluginCodeManager, plugin: Plugin, item: De
 }
 
 function generateCode(manager: PluginCodeManager) {
-  return Array.from(manager.values(), data => {
+  return Array.from(manager.values()).sort((a, b) => a.priority - b.priority).map(data => {
     const codeLines = [
       ...Object.entries(data.decls).flatMap(([declSource, decl]) => {
         let currentLines: string[] = []

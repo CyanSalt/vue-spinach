@@ -8,6 +8,7 @@ export interface BaseNode {
 export interface Code extends BaseNode {
   type: 'Code',
   content: string,
+  priority: number,
 }
 
 export interface Import extends BaseNode {
@@ -42,9 +43,10 @@ export type TransformNode = Code | Import | Declaration | ThisProperty
 export type VisitNode = Code | Import | Declaration | Replacement
 
 export const factory = {
-  code: (content: string): Code => ({
+  code: (content: string, priority = 0): Code => ({
     type: 'Code',
     content,
+    priority,
   }),
   imports: (from: string, imported: string, defaultImports = false): Import => ({
     type: 'Import',

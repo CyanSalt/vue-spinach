@@ -14,6 +14,7 @@ module.exports = {
         '@stylistic/ts/indent': 'off',
         'vue/define-props-declaration': 'off',
         'vue/match-component-file-name': 'off',
+        'vue/no-ref-object-reactivity-loss': 'off',
         'vue/no-unused-properties': 'off',
       },
     },

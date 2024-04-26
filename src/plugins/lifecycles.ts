@@ -6,6 +6,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'beforeCreate'
       || name === 'created'
+      || name === 'serverPrefetch'
       || name === 'beforeMount'
       || name === 'mounted'
       || name === 'beforeUpdate'
