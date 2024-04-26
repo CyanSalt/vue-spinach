@@ -105,12 +105,12 @@ function generateCode(manager: PluginCodeManager) {
       ...Object.entries(data.decls).flatMap(([declSource, decl]) => {
         let currentLines: string[] = []
         if (decl.name) {
-          currentLines.push(`${decl.constant ? 'let' : 'const'} ${decl.name} = ${declSource}`)
+          currentLines.push(`${decl.constant ? 'const' : 'let'} ${decl.name} = ${declSource}`)
           if (decl.names.length) {
-            currentLines.push(`${decl.constant ? 'let' : 'const'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${decl.name}`)
+            currentLines.push(`${decl.constant ? 'const' : 'let'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${decl.name}`)
           }
         } else if (decl.names.length) {
-          currentLines.push(`${decl.constant ? 'let' : 'const'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${declSource}`)
+          currentLines.push(`${decl.constant ? 'const' : 'let'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${declSource}`)
         }
         return currentLines
       }),
@@ -306,7 +306,7 @@ export function addImports(ast: Program, magicString: MagicStringAST, imports: R
   for (const [source, specifiers] of Object.entries(imports)) {
     const decls = ast.body.filter(
       (node): node is ImportDeclaration => node.type === 'ImportDeclaration'
-        && node.importKind === 'value'
+        && node.importKind !== 'type' // maybe undefined
         && resolveString(node.source) === source,
     )
     if (decls.length) {
