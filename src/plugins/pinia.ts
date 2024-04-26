@@ -1,4 +1,4 @@
-import type { Node, SpreadElement } from '@babel/types'
+import type { Node, SpreadElement, VariableDeclaration } from '@babel/types'
 import { isLiteralType, resolveString } from 'ast-kit'
 import { camelCase } from 'lodash-es'
 import { defineSpinachPlugin } from '../plugin'
@@ -103,30 +103,28 @@ export default defineSpinachPlugin({
         let source = storeExpr
         if (decl.name) {
           source = decl.name
-          yield factory.declare(storeExpr, decl.name, true, false)
+          yield factory.hoist(`const ${decl.name} = ${storeExpr}`, factory.priority.interface)
         }
-        let constant = true
+        let kind: VariableDeclaration['kind'] = 'const'
         if (decl.ref) {
           if (options.reactivityTransform) {
             source = `$(${source})`
-            constant = false
+            kind = 'let'
           } else {
             hasStoreToRefs = true
             source = `storeToRefs(${source})`
           }
         }
-        for (const name of decl.names) {
-          yield factory.declare(source, name, constant)
-        }
+        yield factory.hoist(`${kind} {\n${decl.names.map(name => `  ${name},\n`).join('')} } = ${source}`, factory.priority.interface)
       }
       for (const line of lines) {
-        yield factory.code(line)
+        yield factory.code(line, factory.priority.interface)
       }
       if (hasStoreToRefs) {
-        yield factory.imports('pinia', 'storeToRefs')
+        yield factory.hoist(`import { storeToRefs } from 'pinia'`)
       }
       if (hasComputed) {
-        yield factory.imports('vue', 'computed')
+        yield factory.hoist(`import { computed } from 'vue'`)
       }
     }
   },

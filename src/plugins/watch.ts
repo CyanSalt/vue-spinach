@@ -31,7 +31,7 @@ export default defineSpinachPlugin({
         }
       }
       if (hasWatch) {
-        yield factory.imports('vue', 'watch')
+        yield factory.hoist(`import { watch } from 'vue'`)
       }
     }
   },

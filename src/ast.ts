@@ -23,20 +23,34 @@ export function createSourceLocation(code: string) {
 export interface Script {
   ast: Program,
   magicString: MagicStringAST,
-  block: SFCBlock,
 }
 
-export function parseScript(block: SFCBlock | null): Script | undefined {
-  if (!block) return undefined
-  const ast = babelParse(block.content, block.lang, {
+export function parseScript(code: string, lang?: string): Script {
+  const ast = babelParse(code, lang, {
     plugins: [['importAttributes', { deprecatedAssertSyntax: true }]],
   })
-  const magicString = new MagicStringAST(block.content)
+  const magicString = new MagicStringAST(code)
   return {
     ast,
     magicString,
+  }
+}
+
+export interface VueScript extends Script {
+  block: SFCBlock,
+}
+
+export function parseVueScript(block: SFCBlock | null): VueScript | undefined {
+  if (!block) return undefined
+  return {
+    ...parseScript(block.content, block.lang),
     block,
   }
+}
+
+export interface Fragment<T extends Node = Node> {
+  node: T,
+  magicString: MagicStringAST,
 }
 
 export function visitNode(current: Node, fn: (node: Node) => void) {

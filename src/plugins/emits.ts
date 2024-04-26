@@ -15,7 +15,7 @@ export default defineSpinachPlugin({
   *visitProperty({ name, source }, { factory }) {
     if (name === '$emit') {
       if (source !== 'emit') {
-        yield factory.declare('defineEmits()', 'emit', true, false)
+        yield factory.hoist(`const emit = defineEmits()`)
       }
       yield factory.replace('emit')
     }

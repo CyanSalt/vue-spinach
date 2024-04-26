@@ -24,7 +24,7 @@ export default defineSpinachPlugin({
         }
       }
       if (hasComputed) {
-        yield factory.imports('vue', 'computed')
+        yield factory.hoist(`import { computed } from 'vue'`)
       }
     }
   },

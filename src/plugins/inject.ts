@@ -48,7 +48,7 @@ export default defineSpinachPlugin({
       }
     }
     if (hasInject) {
-      yield factory.imports('vue', 'inject')
+      yield factory.hoist(`import { inject } from 'vue'`)
     }
   },
   *visitProperty({ name, source }, { factory }) {

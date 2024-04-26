@@ -1,9 +1,10 @@
-import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement } from '@babel/types'
+import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement, VariableDeclaration } from '@babel/types'
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
-import { visitNode } from './ast'
-import type { Code, Declaration, Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
+import type { Fragment } from './ast'
+import { parseScript, visitNode } from './ast'
+import type { Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 
 export function getOptions(ast: Program) {
@@ -46,71 +47,150 @@ export function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPro
   return node.type === 'ObjectProperty' ? node.value : node
 }
 
-type PluginCodeManager = Map<Plugin, {
-  lines: string[],
-  decls: Record<string, {
-    name?: string,
-    names: string[],
-    constant: boolean,
+interface PluginCodeManager {
+  imports: Fragment<ImportDeclaration>[],
+  local: Map<Plugin, {
+    lines: string[],
+    decls: Fragment<VariableDeclaration>[],
+    priority: number,
   }>,
-  priority: number,
-}>
+}
 
 function createPluginCodeManager(): PluginCodeManager {
-  return new Map<Plugin, {
-    lines: string[],
-    decls: Record<string, {
-      name?: string,
-      names: string[],
-      constant: boolean,
-    }>,
-    priority: 0,
-  }>()
-}
-
-function addCodeLine(manager: PluginCodeManager, plugin: Plugin, item: Code) {
-  if (!manager.has(plugin)) {
-    manager.set(plugin, { lines: [], decls: {}, priority: 0 })
-  }
-  const data = manager.get(plugin)!
-  data.lines.push(item.content)
-  data.priority += item.priority
-}
-
-function addCodeDeclaration(manager: PluginCodeManager, plugin: Plugin, item: Declaration) {
-  if (!manager.has(plugin)) {
-    manager.set(plugin, { lines: [], decls: {}, priority: 0 })
-  }
-  const data = manager.get(plugin)!
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!data.decls[item.from]) {
-    data.decls[item.from] = { names: [], constant: true }
-  }
-  if (!item.destructure) {
-    data.decls[item.from].name = item.name
-  } else if (!data.decls[item.from].names.includes(item.name)) {
-    data.decls[item.from].names.push(item.name)
-  }
-  if (!item.constant) {
-    data.decls[item.from].constant = false
+  return {
+    imports: [],
+    local: new Map(),
   }
 }
 
-function generateCode(manager: PluginCodeManager) {
+function getPluginCodeLocalData(manager: PluginCodeManager, plugin: Plugin) {
+  if (!manager.local.has(plugin)) {
+    manager.local.set(plugin, { lines: [], decls: [], priority: 0 })
+  }
+  return manager.local.get(plugin)!
+}
+
+function addPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
+  const data = getPluginCodeLocalData(manager, plugin)
+  data.lines.push(code)
+  data.priority += priority
+}
+
+function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
+  const data = getPluginCodeLocalData(manager, plugin)
+  const { ast, magicString: hoistedMagicString } = parseScript(code)
+  if (ast.body.length === 1) {
+    const stmt = ast.body[0]
+    if (stmt.type === 'ImportDeclaration') {
+      manager.imports.push({
+        node: stmt,
+        magicString: hoistedMagicString,
+      })
+      return
+    }
+    if (stmt.type === 'VariableDeclaration') {
+      data.decls.push({
+        node: stmt,
+        magicString: hoistedMagicString,
+      })
+      return
+    }
+  }
+  addPluginCode(manager, plugin, code, priority)
+}
+
+function resolveVariableDeclarations(fragments: Fragment<VariableDeclaration>[]) {
+  let decls: Record<string, {
+    properties: string[],
+    identifier?: string,
+    kind: string,
+  }> = {}
+  for (const { node, magicString } of fragments) {
+    for (const decl of node.declarations) {
+      if (decl.init) {
+        const init = magicString.sliceNode(decl.init)
+        const left = decl.id
+        if (left.type === 'ObjectPattern') {
+          for (const property of left.properties) {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!decls[init]) {
+              decls[init] = { properties: [], kind: 'const' }
+            }
+            const propertyCode = magicString.sliceNode(property)
+            if (!decls[init].properties.includes(propertyCode)) {
+              decls[init].properties.push(propertyCode)
+            }
+            if (node.kind === 'let') {
+              decls[init].kind = node.kind
+            }
+          }
+        } else if (left.type === 'Identifier') {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          if (!decls[init]) {
+            decls[init] = { properties: [], kind: 'const' }
+          }
+          decls[init].identifier = resolveString(left)
+          if (node.kind === 'let') {
+            decls[init].kind = node.kind
+          }
+        }
+      }
+    }
+  }
+  return decls
+}
+
+function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[]) {
+  const imports: Record<string, {
+    specifiers: string[],
+    defaultSpecifier?: string,
+    namespaceSpecifier?: string,
+  }> = {}
+  for (const { node } of fragments) {
+    for (const specifier of node.specifiers) {
+      const source = resolveString(node.source)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!imports[source]) {
+        imports[source] = { specifiers: [] }
+      }
+      switch (specifier.type) {
+        case 'ImportNamespaceSpecifier':
+          imports[source].namespaceSpecifier = resolveString(specifier.local)
+          break
+        case 'ImportDefaultSpecifier':
+          imports[source].defaultSpecifier = resolveString(specifier.local)
+          break
+        default: {
+          const local = resolveString(specifier.local)
+          const exportName = resolveString(specifier.imported)
+          const specifierCode = local === exportName ? local : `${exportName} as ${local}`
+          if (!imports[source].specifiers.includes(specifierCode)) {
+            imports[source].specifiers.push(specifierCode)
+          }
+          break
+        }
+      }
+    }
+  }
+  return imports
+}
+
+function generateLocalPluginCode(local: PluginCodeManager['local']) {
   return sortBy(
-    Array.from(manager.values()),
+    Array.from(local.values()),
     data => (data.lines.length ? data.priority / data.lines.length : 0),
   ).map(data => {
+    const decls = resolveVariableDeclarations(data.decls)
     const codeLines = [
-      ...Object.entries(data.decls).flatMap(([declSource, decl]) => {
+      ...Object.entries(decls).flatMap(([init, decl]) => {
         let currentLines: string[] = []
-        if (decl.name) {
-          currentLines.push(`${decl.constant ? 'const' : 'let'} ${decl.name} = ${declSource}`)
-          if (decl.names.length) {
-            currentLines.push(`${decl.constant ? 'const' : 'let'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${decl.name}`)
+        if (decl.identifier) {
+          currentLines.push(`${decl.kind} ${decl.identifier} = ${init}`)
+          if (decl.properties.length) {
+            currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${decl.identifier}`)
           }
-        } else if (decl.names.length) {
-          currentLines.push(`${decl.constant ? 'const' : 'let'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${declSource}`)
+        } else if (decl.properties.length) {
+          currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${init}`)
         }
         return currentLines
       }),
@@ -126,7 +206,6 @@ export function transformOptions(
   options: TransformOptions,
 ) {
   const manager = createPluginCodeManager()
-  let imports: Record<string, string[]> = {}
   let thisProperties: ThisProperty[] = []
   const properties = optionsObject.reduce<typeof optionsObject>(
     (preserved, property) => {
@@ -148,21 +227,10 @@ export function transformOptions(
           for (const item of plugin.transform!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                addCodeLine(manager, plugin, item)
+                addPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Import': {
-                const importSource = options.aliases[item.from] ?? item.from
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (!imports[importSource]) {
-                  imports[importSource] = []
-                }
-                if (!imports[importSource].includes(item.imported)) {
-                  imports[importSource].push(item.imported)
-                }
-                break
-              }
-              case 'Declaration':
-                addCodeDeclaration(manager, plugin, item)
+              case 'Hoist':
+                addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
               case 'Replacement':
                 replacement = item.content
@@ -183,8 +251,8 @@ export function transformOptions(
     [],
   )
   return {
-    code: generateCode(manager),
-    imports,
+    code: generateLocalPluginCode(manager.local),
+    imports: manager.imports,
     thisProperties,
     properties,
   }
@@ -197,7 +265,6 @@ export function transformThisProperties(
   options: TransformOptions,
 ) {
   const manager = createPluginCodeManager()
-  let imports: Record<string, string[]> = {}
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
     visitNode(ast, node => {
@@ -214,21 +281,10 @@ export function transformThisProperties(
           for (const item of plugin.visitProperty!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                addCodeLine(manager, plugin, item)
+                addPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Import': {
-                const importSource = options.aliases[item.from] ?? item.from
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (!imports[importSource]) {
-                  imports[importSource] = []
-                }
-                if (!imports[importSource].includes(item.imported)) {
-                  imports[importSource].push(item.imported)
-                }
-                break
-              }
-              case 'Declaration':
-                addCodeDeclaration(manager, plugin, item)
+              case 'Hoist':
+                addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
               case 'Replacement':
                 replacement = item.content
@@ -243,16 +299,15 @@ export function transformThisProperties(
     })
   }
   return {
-    code: generateCode(manager),
-    imports,
+    code: generateLocalPluginCode(manager.local),
+    imports: manager.imports,
   }
 }
 
 export function appendOptions(defineOptions: ObjectExpression, magicString: MagicStringAST, properties: ObjectExpression['properties'], sourceMagicString: MagicStringAST) {
-  magicString.overwriteNode(
-    defineOptions.properties,
-    magicString.sliceNode(defineOptions.properties)
-      + properties.map(property => `,\n  ${sourceMagicString.sliceNode(property)}`).join(''),
+  magicString.appendLeft(
+    defineOptions.properties.at(-1)!.end!,
+    properties.map(property => `,\n  ${sourceMagicString.sliceNode(property)}`).join(''),
   )
 }
 
@@ -280,24 +335,12 @@ function getLastImports(ast: Program) {
   return ast.body.findLast((node): node is ImportDeclaration => node.type === 'ImportDeclaration')
 }
 
-function insertStatementsAfter(node: Node | Node[], magicString: MagicStringAST, code: string[]) {
-  magicString.overwriteNode(
-    node,
-    magicString.sliceNode(node)
-      + code.map(statement => `\n\n${statement}`).join(''),
-  )
-}
-
-function insertStatementsAtFirst(magicString: MagicStringAST, code: string[]) {
-  magicString.prepend(code.map(statement => `${statement}\n\n`).join(''))
-}
-
 export function prependStatements(ast: Program, magicString: MagicStringAST, code: string[]) {
   const lastImports = getLastImports(ast)
   if (lastImports) {
-    insertStatementsAfter(lastImports, magicString, code)
+    magicString.appendLeft(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
   } else {
-    insertStatementsAtFirst(magicString, code)
+    magicString.appendLeft(0, code.map(statement => `${statement}\n\n`).join(''))
   }
 }
 
@@ -305,30 +348,62 @@ export function replaceStatements(node: Node | Node[], magicString: MagicStringA
   magicString.overwriteNode(node, code.join('\n\n'))
 }
 
-export function addImports(ast: Program, magicString: MagicStringAST, imports: Record<string, string[]>) {
-  const code: string[] = []
-  for (const [source, specifiers] of Object.entries(imports)) {
-    const decls = ast.body.filter(
+export function addImportDeclarations(ast: Program, magicString: MagicStringAST, fragments: PluginCodeManager['imports']) {
+  const imports = resolveImportDeclarations(fragments)
+  let importCode: string[] = []
+  let declCode: string[] = []
+  for (const [source, decl] of Object.entries(imports)) {
+    const existingNodes = ast.body.filter(
       (node): node is ImportDeclaration => node.type === 'ImportDeclaration'
-        && node.importKind !== 'type' // maybe undefined
+        && (!node.importKind || node.importKind === 'value')
         && resolveString(node.source) === source,
     )
-    if (decls.length) {
-      const importedSpecifiers = decls.flatMap(decl => decl.specifiers)
-      const missingSpecifiers = specifiers.filter(name => !importedSpecifiers.some(item => item.local.name === name))
-      if (missingSpecifiers.length) {
-        magicString.overwriteNode(
-          decls[0].specifiers,
-          magicString.sliceNode(decls[0].specifiers)
-            + missingSpecifiers.map(name => `, ${name}`).join(''),
-        )
+    const existingDecl = (
+      resolveImportDeclarations(existingNodes.map(node => ({ node, magicString }))) as Partial<typeof imports>
+    )[source]
+    if (decl.namespaceSpecifier) {
+      if (existingDecl?.namespaceSpecifier) {
+        if (existingDecl.namespaceSpecifier !== decl.namespaceSpecifier) {
+          declCode.push(`const ${decl.namespaceSpecifier} = ${existingDecl.namespaceSpecifier}`)
+        }
+      } else {
+        importCode.push(`import * as ${decl.namespaceSpecifier} from '${source}'`)
       }
-    } else {
-      code.push(`import { ${specifiers.join(', ')} } from '${source}'`)
+    }
+    // TODO: merge default specifier and specifiers
+    if (decl.defaultSpecifier) {
+      if (existingDecl?.defaultSpecifier) {
+        if (existingDecl.defaultSpecifier !== decl.defaultSpecifier) {
+          declCode.push(`const ${decl.defaultSpecifier} = ${existingDecl.defaultSpecifier}`)
+        }
+      } else {
+        importCode.push(`import ${decl.defaultSpecifier} from '${source}'`)
+      }
+    }
+    const missingSpecifiers = existingDecl ? decl.specifiers.filter(
+      specifierCode => !existingDecl.specifiers.includes(specifierCode),
+    ) : decl.specifiers
+    if (missingSpecifiers.length) {
+      const missingSpecifierCode = missingSpecifiers.map(name => `${name}`).join(', ')
+      const reusableNode = existingNodes.find(node => node.specifiers.some(item => item.type === 'ImportSpecifier'))
+      if (reusableNode) {
+        magicString.appendLeft(
+          reusableNode.specifiers.at(-1)!.end!,
+          ', ' + missingSpecifierCode,
+        )
+      } else {
+        importCode.push(`import { ${missingSpecifierCode} } from '${source}'`)
+      }
     }
   }
+  const code = [...importCode, ...(declCode.length ? ['', ...declCode] : declCode)]
+  const lastImports = getLastImports(ast)
   if (code.length) {
-    magicString.prepend('\n' + code.join('\n') + (getLastImports(ast) ? '' : '\n'))
+    if (lastImports) {
+      magicString.appendLeft(lastImports.end!, code.map(line => `\n${line}`).join(''))
+    } else {
+      magicString.appendLeft(0, code.map(line => `\n${line}`).join('') + '\n')
+    }
   }
 }
 

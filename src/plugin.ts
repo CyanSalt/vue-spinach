@@ -25,19 +25,10 @@ export interface Code extends BaseNode {
   priority: number,
 }
 
-export interface Import extends BaseNode {
-  type: 'Import',
-  from: string,
-  imported: string,
-  defaultImports: boolean,
-}
-
-export interface Declaration extends BaseNode {
-  type: 'Declaration',
-  from: string,
-  name: string,
-  constant: boolean,
-  destructure: boolean,
+export interface Hoist extends BaseNode {
+  type: 'Hoist',
+  content: string,
+  priority: number,
 }
 
 export interface ThisProperty extends BaseNode {
@@ -52,9 +43,9 @@ export interface Replacement extends BaseNode {
   content: string | false,
 }
 
-export type TransformNode = Code | Import | Declaration | Replacement | ThisProperty
+export type TransformNode = Code | Hoist | Replacement | ThisProperty
 
-export type VisitNode = Code | Import | Declaration | Replacement
+export type VisitNode = Code | Hoist | Replacement
 
 export const factory = {
   priority: CodePriority,
@@ -63,18 +54,10 @@ export const factory = {
     content,
     priority,
   }),
-  imports: (from: string, imported: string, defaultImports = false): Import => ({
-    type: 'Import',
-    from,
-    imported,
-    defaultImports,
-  }),
-  declare: (from: string, name: string, constant = true, destructure = true): Declaration => ({
-    type: 'Declaration',
-    from,
-    name,
-    constant,
-    destructure,
+  hoist: (content: string, priority = 0): Hoist => ({
+    type: 'Hoist',
+    content,
+    priority,
   }),
   thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({
     type: 'ThisProperty',

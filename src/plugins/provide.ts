@@ -41,7 +41,7 @@ export default defineSpinachPlugin({
         }
       }
       if (hasProvide) {
-        yield factory.imports('vue', 'provide')
+        yield factory.hoist(`import { provide } from 'vue'`)
       }
     }
   },

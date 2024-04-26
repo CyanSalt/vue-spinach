@@ -1,6 +1,6 @@
 import { parse } from '@vue/compiler-sfc'
-import type { Script } from './ast'
-import { createSourceLocation, parseScript } from './ast'
+import type { VueScript } from './ast'
+import { createSourceLocation, parseVueScript } from './ast'
 import { generateCode } from './generator'
 import type { Plugin, TransformOptions } from './plugin'
 import transformComponents from './plugins/components'
@@ -18,7 +18,7 @@ import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import transformWatch from './plugins/watch'
-import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
+import { addImportDeclarations, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 export type {
   Plugin,
@@ -45,9 +45,9 @@ const builtinPlugins: Plugin[] = [
   transformVueRouter,
 ]
 
-function transformScript(
-  script: Script,
-  scriptSetup: Script | undefined,
+function transformVueScript(
+  script: VueScript,
+  scriptSetup: VueScript | undefined,
   options: TransformOptions,
 ) {
   const baseScript = scriptSetup ?? script
@@ -80,9 +80,9 @@ function transformScript(
     }
     replaceStatements(vueOptions.exports, script.magicString, optionsCode)
   }
-  addImports(baseScript.ast, baseScript.magicString, optionsImports)
+  addImportDeclarations(baseScript.ast, baseScript.magicString, optionsImports)
   // Step 2: traverse this[key]
-  const transformed = parseScript({
+  const transformed = parseVueScript({
     ...baseScript.block,
     content: options.scriptSetup
       ? baseScript.magicString.toString()
@@ -95,7 +95,7 @@ function transformScript(
   if (thisPropertiesCode.length) {
     prependStatements(transformed.ast, transformed.magicString, thisPropertiesCode)
   }
-  addImports(transformed.ast, transformed.magicString, thisPropertiesImports)
+  addImportDeclarations(transformed.ast, transformed.magicString, thisPropertiesImports)
   if (options.scriptSetup) {
     return transformed.magicString.toString()
   } else {
@@ -128,18 +128,18 @@ export function transformSFC(code: string, userOptions?: Partial<TransformOption
   const { descriptor } = parse(code, {
     filename: `sfc.vue#${JSON.stringify(options)}`,
   })
-  const parsedScript = parseScript(descriptor.script)
-  const parsedScriptSetup = parseScript(descriptor.scriptSetup)
+  const vueScript = parseVueScript(descriptor.script)
+  const vueScriptSetup = parseVueScript(descriptor.scriptSetup)
   if (options.scriptSetup) {
-    if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, options)
+    if (vueScript) {
+      const content = transformVueScript(vueScript, vueScriptSetup, options)
       if (descriptor.scriptSetup) {
         descriptor.scriptSetup.content = content
       } else {
         descriptor.scriptSetup = {
           type: 'script',
           content,
-          attrs: { ...parsedScript.block.attrs, setup: true },
+          attrs: { ...vueScript.block.attrs, setup: true },
           loc: createSourceLocation(content),
         }
       }
@@ -149,8 +149,8 @@ export function transformSFC(code: string, userOptions?: Partial<TransformOption
     if (descriptor.scriptSetup) {
       throw new Error('Could not transform with an existing <script setup> tag when "scriptSetup" is set to false.')
     }
-    if (parsedScript) {
-      const content = transformScript(parsedScript, parsedScriptSetup, options)
+    if (vueScript) {
+      const content = transformVueScript(vueScript, vueScriptSetup, options)
       descriptor.script!.content = content
     }
   }
