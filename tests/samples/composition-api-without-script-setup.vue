@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { ref, provide, computed, onMounted } from 'vue'
+import { ref, provide, inject, computed, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -18,6 +18,8 @@ export default {
     'my-click': MyClick,
   },
   setup(props) {
+    const type = inject('typeCtx', 'normal')
+
     const suffix = ref('()')
 
     const msg = ref('')
@@ -27,7 +29,9 @@ export default {
         })
 
     function reset() {
-          msg.value = ''
+          if (type.value) {
+            msg.value = ''
+          }
         }
 
     provide('msg', msg.value)
@@ -37,6 +41,7 @@ export default {
       })
 
     return {
+      type,
       suffix,
       msg,
       formatted,

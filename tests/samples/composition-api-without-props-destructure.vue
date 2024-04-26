@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { ref, provide, computed, onMounted } from 'vue'
+import { ref, provide, inject, computed, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
 import MyClick from '/path/to/MyClick'
 
 const vMyClick = MyClick
+
+const type = inject('typeCtx', 'normal')
 
 const props = defineProps({
     prefix: {
@@ -23,7 +25,9 @@ const formatted = computed(() => {
     })
 
 function reset() {
-      msg.value = ''
+      if (type.value) {
+        msg.value = ''
+      }
     }
 
 provide('msg', msg.value)

@@ -35,7 +35,7 @@ export default defineSpinachPlugin({
       if (options.propsDestructure) {
         yield factory.code(`const {\n${
           destructuredProps.map(prop => `  ${prop},\n`).join('')
-        }} = defineProps(${magicString.sliceNode(node)})`)
+        }} = defineProps(${magicString.sliceNode(node)})`, factory.priority.interface)
       } else {
         yield factory.code(`const props = defineProps(${magicString.sliceNode(node)})`, factory.priority.interface)
       }

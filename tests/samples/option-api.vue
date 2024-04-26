@@ -22,6 +22,12 @@ export default {
       msg: this.msg,
     }
   },
+  inject: {
+    type: {
+      from: 'typeCtx',
+      default: 'normal',
+    },
+  },
   props: {
     prefix: {
       type: String,
@@ -50,7 +56,9 @@ export default {
   },
   methods: {
     reset() {
-      this.msg = ''
+      if (this.type) {
+        this.msg = ''
+      }
     },
   },
 }
