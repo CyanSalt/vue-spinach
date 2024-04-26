@@ -1,4 +1,5 @@
 import * as fs from 'node:fs'
+import * as path from 'node:path'
 import parseArgs from 'minimist'
 import type { TransformOptions } from '.'
 import { transformSFC } from '.'
@@ -23,7 +24,7 @@ async function main() {
     : read(process.stdin)
   let config: TransformOptions | undefined
   if (args.config) {
-    const { default: importedConfig } = await import(args.config)
+    const { default: importedConfig } = await import(path.resolve(args.config))
     config = importedConfig
   }
   const input = await inputPromise
