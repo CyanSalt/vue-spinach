@@ -1,31 +1,24 @@
-import type { CallExpression, Node, SpreadElement } from '@babel/types'
+import type { Node, SpreadElement } from '@babel/types'
 import { isLiteralType, resolveString } from 'ast-kit'
+import { camelCase } from 'lodash-es'
 import { defineSpinachPlugin } from '../plugin'
+import type { ObjectPropertyValueLike } from '../transform'
 import { getProperties } from '../transform'
 
-function getMappedKeys(node: Node) {
-  return node.type === 'ObjectExpression'
-    ? Object.keys(getProperties(node))
-    : (
-      node.type === 'ArrayExpression'
-        ? node.elements.map(
-          item => (isLiteralType(item) ? resolveString(item) : undefined),
-        ).filter((value): value is NonNullable<typeof value> => value !== undefined)
-        : []
-    )
-}
-
-function extractMappingArguments(node: CallExpression) {
-  let name: string | undefined
-  let keys: string[] = []
-  if (node.arguments.length >= 2 && node.arguments[0].type === 'Identifier') {
-    name = resolveString(node.arguments[0])
-    keys = getMappedKeys(node.arguments[1])
+function getStoreProperties(node: Node) {
+  if (node.type === 'ObjectExpression') {
+    return getProperties(node)
   }
-  return {
-    name,
-    keys,
+  const result: Record<string, ObjectPropertyValueLike> = {}
+  if (node.type === 'ArrayExpression') {
+    for (const element of node.elements) {
+      if (isLiteralType(element)) {
+        const name = resolveString(element)
+        result[name] = element
+      }
+    }
   }
+  return result
 }
 
 export default defineSpinachPlugin({
@@ -33,8 +26,16 @@ export default defineSpinachPlugin({
     return name === 'computed'
       || name === 'methods'
   },
-  *transform({ name, node, magicString, options }, { factory }) {
+  *transform({ node, magicString, options }, { factory }) {
     if (node.type === 'ObjectExpression') {
+      let hasStoreToRefs = false
+      let hasComputed = false
+      let lines: string[] = []
+      let decls: Record<string, {
+        name?: string,
+        names: string[],
+        ref?: boolean,
+      }> = {}
       const spreads = node.properties.filter((element): element is SpreadElement => element.type === 'SpreadElement')
       for (const element of spreads) {
         const mapCall = element.argument
@@ -43,32 +44,89 @@ export default defineSpinachPlugin({
           && mapCall.callee.type === 'Identifier'
         ) {
           const mapName = resolveString(mapCall.callee)
-          if (name === 'computed' && (mapName === 'mapState' || mapName === 'mapGetters')) {
-            const { name: funcName, keys } = extractMappingArguments(mapCall)
-            for (const key of keys) {
-              if (options.reactivityTransform) {
-                yield factory.thisProperty(key, 'pinia computed (reactivityTransform)')
-              } else {
-                yield factory.thisProperty(key, 'pinia computed')
+          if (mapName === 'mapState' || mapName === 'mapGetters') {
+            if (mapCall.arguments.length >= 2 && mapCall.arguments[0].type === 'Identifier') {
+              const funcName = resolveString(mapCall.arguments[0])
+              const properties = getStoreProperties(mapCall.arguments[1])
+              for (const [key, value] of Object.entries(properties)) {
+                if (options.reactivityTransform) {
+                  yield factory.thisProperty(key, 'pinia computed (reactivityTransform)')
+                } else {
+                  yield factory.thisProperty(key, 'pinia computed')
+                }
+                let declName = key
+                const storeExpr = `${funcName}()`
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                if (!decls[storeExpr]) {
+                  decls[storeExpr] = { names: [] }
+                }
+                if (isLiteralType(value)) {
+                  const propName = resolveString(value)
+                  if (propName !== key) {
+                    declName = `${propName}: ${key}`
+                  }
+                  decls[storeExpr].ref = true
+                  decls[storeExpr].names.push(declName)
+                } else {
+                  const storeName = camelCase(`store-from-${funcName}`)
+                  decls[storeExpr].name = storeName
+                  hasComputed = true
+                  lines.push(`const ${key} = computed(() => {\n  return (${magicString.sliceNode(value)})(${storeName})\n})`)
+                }
               }
             }
-            if (funcName && keys.length) {
-              if (options.reactivityTransform) {
-                yield factory.code(`const {\n${keys.map(key => `  ${key},\n`).join('')}} = $(${funcName}())`)
-              } else {
-                yield factory.code(`const {\n${keys.map(key => `  ${key},\n`).join('')}} = ${funcName}()`)
+          } else if (mapName === 'mapActions') {
+            if (mapCall.arguments.length >= 2 && mapCall.arguments[0].type === 'Identifier') {
+              const funcName = resolveString(mapCall.arguments[0])
+              const properties = getStoreProperties(mapCall.arguments[1])
+              for (const [key, value] of Object.entries(properties)) {
+                yield factory.thisProperty(key, 'pinia methods')
+                let declName = key
+                const storeExpr = `${funcName}()`
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                if (!decls[storeExpr]) {
+                  decls[storeExpr] = { names: [] }
+                }
+                if (isLiteralType(value)) {
+                  const propName = resolveString(value)
+                  if (propName !== key) {
+                    declName = `${propName}: ${key}`
+                  }
+                  decls[storeExpr].names.push(declName)
+                }
               }
-            }
-          } else if (name === 'methods' && mapName === 'mapActions') {
-            const { name: funcName, keys } = extractMappingArguments(mapCall)
-            for (const key of keys) {
-              yield factory.thisProperty(key, 'pinia methods')
-            }
-            if (funcName && keys.length) {
-              yield factory.code(`const {\n${keys.map(key => `  ${key},\n`).join('')}} = ${funcName}()`)
             }
           }
         }
+      }
+      for (const [storeExpr, decl] of Object.entries(decls)) {
+        let source = storeExpr
+        if (decl.name) {
+          source = decl.name
+          yield factory.declare(storeExpr, decl.name, true, false)
+        }
+        let constant = true
+        if (decl.ref) {
+          if (options.reactivityTransform) {
+            source = `$(${source})`
+            constant = false
+          } else {
+            hasStoreToRefs = true
+            source = `storeToRefs(${source})`
+          }
+        }
+        for (const name of decl.names) {
+          yield factory.declare(source, name, constant)
+        }
+      }
+      for (const line of lines) {
+        yield factory.code(line)
+      }
+      if (hasStoreToRefs) {
+        yield factory.imports('pinia', 'storeToRefs')
+      }
+      if (hasComputed) {
+        yield factory.imports('vue', 'computed')
       }
     }
   },
