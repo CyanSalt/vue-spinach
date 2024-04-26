@@ -1,3 +1,4 @@
+import { isFunctionType } from 'ast-kit'
 import { defineSpinachPlugin } from '../plugin'
 import { getProperties } from '../transform'
 
@@ -10,7 +11,7 @@ export default defineSpinachPlugin({
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
         yield factory.thisProperty(key, 'methods')
-        if (value.type === 'ObjectMethod' || value.type === 'FunctionExpression') {
+        if (isFunctionType(value)) {
           yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) ${magicString.sliceNode(value.body)}`, factory.priority.derived)
         } else {
           yield factory.code(`const ${key} = ${magicString.sliceNode(value)})`, factory.priority.derived)

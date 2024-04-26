@@ -51,6 +51,14 @@ export default {
       return this.prefix + this.msg + this.suffix
     },
   },
+  watch: {
+    suffix: {
+      async handler(value) {
+        this.reset()
+      },
+      immediate: true,
+    },
+  },
   mounted() {
     this.msg = 'hello'
   },

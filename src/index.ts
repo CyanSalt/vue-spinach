@@ -15,6 +15,7 @@ import transformProps from './plugins/props'
 import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
+import transformWatch from './plugins/watch'
 import { addImports, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 export type {
@@ -33,6 +34,7 @@ const builtinPlugins: Plugin[] = [
   transformSetup,
   transformData,
   transformComputed,
+  transformWatch,
   transformLifecycles,
   transformMethods,
   transformPinia,

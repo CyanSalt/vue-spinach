@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, provide, inject, onMounted } from 'vue'
+import { ref, provide, inject, watch, onMounted } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -33,6 +33,12 @@ function reset() {
     }
 
 provide('msg', msg)
+
+watch(() => suffix.value, async (value) => {
+        reset()
+      }, {
+  immediate: true,
+})
 
 onMounted(() => {
     msg = 'hello'
