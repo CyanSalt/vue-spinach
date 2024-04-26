@@ -2,7 +2,7 @@ import type { BlockStatement, CallExpression, ExportDefaultDeclaration, Expressi
 import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import type { MagicStringAST } from 'magic-string-ast'
 import { visitNode } from './ast'
-import type { ThisProperty, TransformHelpers, TransformOptions } from './plugin'
+import type { Code, Declaration, Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 
 export function getOptions(ast: Program) {
@@ -45,15 +45,82 @@ function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyVa
   return node.type === 'ObjectProperty' ? node.value : node
 }
 
+type PluginCodeManager = Map<Plugin, {
+  lines: string[],
+  decls: Record<string, {
+    name?: string,
+    names: string[],
+    constant: boolean,
+  }>,
+}>
+
+function createPluginCodeManager(): PluginCodeManager {
+  return new Map<Plugin, {
+    lines: string[],
+    decls: Record<string, {
+      name?: string,
+      names: string[],
+      constant: boolean,
+    }>,
+  }>()
+}
+
+function addCodeLine(manager: PluginCodeManager, plugin: Plugin, item: Code) {
+  if (!manager.has(plugin)) {
+    manager.set(plugin, { lines: [], decls: {} })
+  }
+  const data = manager.get(plugin)!
+  data.lines.push(item.content)
+}
+
+function addCodeDeclaration(manager: PluginCodeManager, plugin: Plugin, item: Declaration) {
+  if (!manager.has(plugin)) {
+    manager.set(plugin, { lines: [], decls: {} })
+  }
+  const data = manager.get(plugin)!
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!data.decls[item.from]) {
+    data.decls[item.from] = { names: [], constant: true }
+  }
+  if (!item.destructure) {
+    data.decls[item.from].name = item.name
+  } else if (!data.decls[item.from].names.includes(item.name)) {
+    data.decls[item.from].names.push(item.name)
+  }
+  if (!item.constant) {
+    data.decls[item.from].constant = false
+  }
+}
+
+function generateCode(manager: PluginCodeManager) {
+  return Array.from(manager.values(), data => {
+    const codeLines = [
+      ...Object.entries(data.decls).flatMap(([declSource, decl]) => {
+        let currentLines: string[] = []
+        if (decl.name) {
+          currentLines.push(`${decl.constant ? 'let' : 'const'} ${decl.name} = ${declSource}`)
+          if (decl.names.length) {
+            currentLines.push(`${decl.constant ? 'let' : 'const'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${decl.name}`)
+          }
+        } else if (decl.names.length) {
+          currentLines.push(`${decl.constant ? 'let' : 'const'} {\n${decl.names.map(varName => `  ${varName},\n`).join('')}} = ${declSource}`)
+        }
+        return currentLines
+      }),
+      ...data.lines,
+    ]
+    return codeLines.join('\n')
+  })
+}
+
 export function transformOptions(
   optionsObject: ObjectExpression['properties'],
   magicString: MagicStringAST,
   options: TransformOptions,
 ) {
-  let code: string[] = []
-  let codeSet = new Set<string>()
-  let thisProperties: ThisProperty[] = []
+  const manager = createPluginCodeManager()
   let imports: Record<string, string[]> = {}
+  let thisProperties: ThisProperty[] = []
   const properties = optionsObject.reduce<typeof optionsObject>(
     (preserved, property) => {
       if ((
@@ -68,16 +135,12 @@ export function transformOptions(
         const context = { name, node, magicString, options }
         const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         for (const plugin of matchedPlugins) {
-          let lines: string[] = []
           const helpers: TransformHelpers = { factory, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
           for (const item of plugin.transform!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                if (!item.once || !codeSet.has(item.content)) {
-                  lines.push(item.content)
-                  codeSet.add(item.content)
-                }
+                addCodeLine(manager, plugin, item)
                 break
               case 'Import': {
                 const importSource = options.aliases[item.from] ?? item.from
@@ -90,13 +153,13 @@ export function transformOptions(
                 }
                 break
               }
+              case 'Declaration':
+                addCodeDeclaration(manager, plugin, item)
+                break
               case 'ThisProperty':
                 thisProperties.push(item)
                 break
             }
-          }
-          if (lines.length) {
-            code.push(lines.join('\n'))
           }
         }
         if (matchedPlugins.length) {
@@ -109,7 +172,7 @@ export function transformOptions(
     [],
   )
   return {
-    code,
+    code: generateCode(manager),
     imports,
     thisProperties,
     properties,
@@ -122,8 +185,7 @@ export function transformThisProperties(
   thisProperties: ThisProperty[],
   options: TransformOptions,
 ) {
-  let code: string[] = []
-  let codeSet = new Set<string>()
+  const manager = createPluginCodeManager()
   let imports: Record<string, string[]> = {}
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
@@ -138,14 +200,10 @@ export function transformThisProperties(
         const helpers = { factory }
         let replacement: string | undefined
         for (const plugin of matchedPlugins) {
-          let lines: string[] = []
           for (const item of plugin.visitProperty!(context, helpers)) {
             switch (item.type) {
               case 'Code':
-                if (!item.once || !codeSet.has(item.content)) {
-                  lines.push(item.content)
-                  codeSet.add(item.content)
-                }
+                addCodeLine(manager, plugin, item)
                 break
               case 'Import': {
                 const importSource = options.aliases[item.from] ?? item.from
@@ -158,13 +216,13 @@ export function transformThisProperties(
                 }
                 break
               }
+              case 'Declaration':
+                addCodeDeclaration(manager, plugin, item)
+                break
               case 'Replacement':
                 replacement = item.content
                 break
             }
-          }
-          if (lines.length) {
-            code.push(lines.join('\n'))
           }
         }
         if (replacement !== undefined) {
@@ -174,7 +232,7 @@ export function transformThisProperties(
     })
   }
   return {
-    code,
+    code: generateCode(manager),
     imports,
   }
 }

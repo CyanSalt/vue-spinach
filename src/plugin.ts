@@ -8,13 +8,21 @@ export interface BaseNode {
 export interface Code extends BaseNode {
   type: 'Code',
   content: string,
-  once: boolean,
 }
 
 export interface Import extends BaseNode {
   type: 'Import',
   from: string,
   imported: string,
+  defaultImports: boolean,
+}
+
+export interface Declaration extends BaseNode {
+  type: 'Declaration',
+  from: string,
+  name: string,
+  constant: boolean,
+  destructure: boolean,
 }
 
 export interface ThisProperty extends BaseNode {
@@ -29,15 +37,38 @@ export interface Replacement extends BaseNode {
   content: string,
 }
 
-export type TransformNode = Code | Import | ThisProperty
+export type TransformNode = Code | Import | Declaration | ThisProperty
 
-export type VisitNode = Code | Import | Replacement
+export type VisitNode = Code | Import | Declaration | Replacement
 
 export const factory = {
-  code: (content: string, once = false): Code => ({ type: 'Code', content, once }),
-  imports: (from: string, imported: string): Import => ({ type: 'Import', from, imported }),
-  thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({ type: 'ThisProperty', name, source, exposed }),
-  replace: (content: string): Replacement => ({ type: 'Replacement', content }),
+  code: (content: string): Code => ({
+    type: 'Code',
+    content,
+  }),
+  imports: (from: string, imported: string, defaultImports = false): Import => ({
+    type: 'Import',
+    from,
+    imported,
+    defaultImports,
+  }),
+  declare: (from: string, name: string, constant = true, destructure = true): Declaration => ({
+    type: 'Declaration',
+    from,
+    name,
+    constant,
+    destructure,
+  }),
+  thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({
+    type: 'ThisProperty',
+    name,
+    source,
+    exposed,
+  }),
+  replace: (content: string): Replacement => ({
+    type: 'Replacement',
+    content,
+  }),
 }
 
 export interface TransformOptions {
