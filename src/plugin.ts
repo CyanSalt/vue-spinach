@@ -25,7 +25,6 @@ export interface LocalCode extends BaseNode {
 export interface HoistedCode extends BaseNode {
   type: 'HoistedCode',
   content: string,
-  priority: number,
 }
 
 export interface Property extends BaseNode {
@@ -48,10 +47,9 @@ export const factory = {
     content,
     priority,
   }),
-  hoist: (content: string, priority = 0): HoistedCode => ({
+  hoist: (content: string): HoistedCode => ({
     type: 'HoistedCode',
     content,
-    priority,
   }),
   property: (name: string, source: unknown, exposed = true): Property => ({
     type: 'Property',

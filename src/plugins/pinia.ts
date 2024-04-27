@@ -103,7 +103,7 @@ export default defineSpinachPlugin({
         let source = storeExpr
         if (decl.name) {
           source = decl.name
-          yield factory.hoist(`const ${decl.name} = ${storeExpr}`, factory.priority.interface)
+          yield factory.hoist(`const ${decl.name} = ${storeExpr}`)
         }
         let kind: VariableDeclaration['kind'] = 'const'
         if (decl.ref) {
@@ -115,7 +115,7 @@ export default defineSpinachPlugin({
             source = `storeToRefs(${source})`
           }
         }
-        yield factory.hoist(`${kind} {\n${decl.names.map(name => `  ${name},\n`).join('')} } = ${source}`, factory.priority.interface)
+        yield factory.hoist(`${kind} {\n${decl.names.map(name => `  ${name},\n`).join('')} } = ${source}`)
       }
       for (const line of lines) {
         yield factory.code(line, factory.priority.interface)

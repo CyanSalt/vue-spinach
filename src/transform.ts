@@ -81,7 +81,7 @@ function addLocalCode(manager: PluginCodeManager, plugin: Plugin, code: string, 
   data.priority += priority
 }
 
-function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
+function addHoistedCode(manager: PluginCodeManager, code: string) {
   const { ast, magicString: hoistedMagicString } = parseScript(code)
   if (ast.body.length === 1) {
     const stmt = ast.body[0]
@@ -100,7 +100,6 @@ function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: 
       return
     }
   }
-  addLocalCode(manager, plugin, code, priority)
 }
 
 function resolveVariableDeclarations(fragments: Fragment<VariableDeclaration>[]) {
@@ -297,7 +296,7 @@ export function transformOptions(
                 addLocalCode(manager, plugin, item.content, item.priority)
                 break
               case 'HoistedCode':
-                addHoistedPluginCode(manager, plugin, item.content, item.priority)
+                addHoistedCode(manager, item.content)
                 break
               case 'Property':
                 instanceProperties.push(item)
@@ -352,7 +351,7 @@ export function transformThisProperties(
                 addLocalCode(manager, plugin, item.content, item.priority)
                 break
               case 'HoistedCode':
-                addHoistedPluginCode(manager, plugin, item.content, item.priority)
+                addHoistedCode(manager, item.content)
                 break
             }
           }
