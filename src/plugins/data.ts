@@ -28,11 +28,11 @@ export default defineSpinachPlugin({
       let hasRef = false
       for (const [key, value] of Object.entries(properties)) {
         if (options.reactivityTransform) {
-          yield factory.thisProperty(key, 'data (reactivityTransform)')
+          yield factory.property(key, 'data (reactivityTransform)')
           yield factory.code(`let ${key} = $ref(${magicString.sliceNode(value)})`)
         } else {
           hasRef = true
-          yield factory.thisProperty(key, 'data')
+          yield factory.property(key, 'data')
           yield factory.code(`const ${key} = ref(${magicString.sliceNode(value)})`)
         }
       }

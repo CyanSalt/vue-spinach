@@ -5,7 +5,7 @@ export default defineSpinachPlugin({
     return name === 'emits'
   },
   *transform({ node, magicString, options }, { factory }) {
-    yield factory.thisProperty('$emit', 'emit', false)
+    yield factory.property('$emit', 'emit', false)
     if (options.scriptSetup) {
       yield factory.code(`const emit = defineEmits(${magicString.sliceNode(node)})`, factory.priority.interface)
     } else {

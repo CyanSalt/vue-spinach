@@ -4,7 +4,7 @@ import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
 import type { Fragment } from './ast'
 import { parseScript, visitNode } from './ast'
-import type { Plugin, ThisProperty, TransformHelpers, TransformOptions } from './plugin'
+import type { Plugin, Property, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 
 export function getOptions(ast: Program) {
@@ -206,8 +206,8 @@ export function transformOptions(
   options: TransformOptions,
 ) {
   const manager = createPluginCodeManager()
-  let thisProperties: ThisProperty[] = []
-  const properties = optionsObject.reduce<typeof optionsObject>(
+  let instanceProperties: Property[] = []
+  const optionProperties = optionsObject.reduce<typeof optionsObject>(
     (preserved, property) => {
       if ((
         property.type === 'ObjectProperty'
@@ -229,14 +229,14 @@ export function transformOptions(
               case 'Code':
                 addPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Hoist':
+              case 'HoistedCode':
                 addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
               case 'Replacement':
                 replacement = item.content
                 break
-              case 'ThisProperty':
-                thisProperties.push(item)
+              case 'Property':
+                instanceProperties.push(item)
                 break
             }
           }
@@ -253,15 +253,15 @@ export function transformOptions(
   return {
     code: generateLocalPluginCode(manager.local),
     imports: manager.imports,
-    thisProperties,
-    properties,
+    instanceProperties,
+    optionProperties,
   }
 }
 
 export function transformThisProperties(
   ast: Program,
   magicString: MagicStringAST,
-  thisProperties: ThisProperty[],
+  properties: Property[],
   options: TransformOptions,
 ) {
   const manager = createPluginCodeManager()
@@ -273,7 +273,7 @@ export function transformThisProperties(
         || isLiteralType(node.property)
       )) {
         const name = resolveString(node.property)
-        const source = thisProperties.find(item => item.name === name)?.source
+        const source = properties.find(item => item.name === name)?.source
         const context = { name, node, magicString, source }
         const helpers = { factory }
         let replacement: string | false = false
@@ -283,7 +283,7 @@ export function transformThisProperties(
               case 'Code':
                 addPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Hoist':
+              case 'HoistedCode':
                 addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
               case 'Replacement':
@@ -315,7 +315,7 @@ export function createDefineOptions(properties: ObjectExpression['properties'], 
   return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},\n`).join('')}})`
 }
 
-export function createSetupReturn(properties: ThisProperty[]) {
+export function createSetupReturn(properties: Property[]) {
   return `return {\n${
     properties
       .filter(property => property.exposed)

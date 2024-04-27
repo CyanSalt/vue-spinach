@@ -24,10 +24,10 @@ export default defineSpinachPlugin({
           injectFrom ? magicString.sliceNode(injectFrom) : `'${key}'`
         }${defaultValue ? `, ${magicString.sliceNode(defaultValue)}` : ''})`
         if (options.reactivityTransform) {
-          yield factory.thisProperty(key, 'inject (reactivityTransform)')
+          yield factory.property(key, 'inject (reactivityTransform)')
           yield factory.code(`let ${key} = $(${injectExpr})`, factory.priority.interface)
         } else {
-          yield factory.thisProperty(key, 'inject')
+          yield factory.property(key, 'inject')
           yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
         }
       }
@@ -38,10 +38,10 @@ export default defineSpinachPlugin({
           const key = resolveString(element)
           const injectExpr = `inject('${key}')`
           if (options.reactivityTransform) {
-            yield factory.thisProperty(key, 'inject (reactivityTransform)')
+            yield factory.property(key, 'inject (reactivityTransform)')
             yield factory.code(`let ${key} = $(${injectExpr})`, factory.priority.interface)
           } else {
-            yield factory.thisProperty(key, 'inject')
+            yield factory.property(key, 'inject')
             yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
           }
         }

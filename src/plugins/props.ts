@@ -13,9 +13,9 @@ export default defineSpinachPlugin({
       for (const key of Object.keys(properties)) {
         if (options.scriptSetup && options.propsDestructure) {
           destructuredProps.push(key)
-          yield factory.thisProperty(key, 'props (propsDestructure)', false)
+          yield factory.property(key, 'props (propsDestructure)', false)
         } else {
-          yield factory.thisProperty(key, 'props', false)
+          yield factory.property(key, 'props', false)
         }
       }
     } else if (node.type === 'ArrayExpression') {
@@ -24,9 +24,9 @@ export default defineSpinachPlugin({
           const key = resolveString(element)
           if (options.scriptSetup && options.propsDestructure) {
             destructuredProps.push(key)
-            yield factory.thisProperty(key, 'props (propsDestructure)', false)
+            yield factory.property(key, 'props (propsDestructure)', false)
           } else {
-            yield factory.thisProperty(key, 'props', false)
+            yield factory.property(key, 'props', false)
           }
         }
       }

@@ -10,7 +10,7 @@ export default defineSpinachPlugin({
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
-        yield factory.thisProperty(key, 'methods')
+        yield factory.property(key, 'methods')
         if (isFunctionType(value)) {
           yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) ${magicString.sliceNode(value.body)}`, factory.priority.derived)
         } else {

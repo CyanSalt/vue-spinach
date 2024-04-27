@@ -28,7 +28,7 @@ export default defineSpinachPlugin({
         if (returnStmt.argument?.type === 'ObjectExpression') {
           const properties = getProperties(returnStmt.argument)
           for (const [key, value] of Object.entries(properties)) {
-            yield factory.thisProperty(key, 'setup')
+            yield factory.property(key, 'setup')
             if (value.type !== 'Identifier' || value.name !== key) {
               // TODO: compat with reactivity transform
               yield factory.code(`const ${key} = ${magicString.sliceNode(value)}`)

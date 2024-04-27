@@ -50,9 +50,9 @@ export default defineSpinachPlugin({
               const properties = getStoreProperties(mapCall.arguments[1])
               for (const [key, value] of Object.entries(properties)) {
                 if (options.reactivityTransform) {
-                  yield factory.thisProperty(key, 'pinia computed (reactivityTransform)')
+                  yield factory.property(key, 'pinia computed (reactivityTransform)')
                 } else {
-                  yield factory.thisProperty(key, 'pinia computed')
+                  yield factory.property(key, 'pinia computed')
                 }
                 let declName = key
                 const storeExpr = `${funcName}()`
@@ -80,7 +80,7 @@ export default defineSpinachPlugin({
               const funcName = resolveString(mapCall.arguments[0])
               const properties = getStoreProperties(mapCall.arguments[1])
               for (const [key, value] of Object.entries(properties)) {
-                yield factory.thisProperty(key, 'pinia methods')
+                yield factory.property(key, 'pinia methods')
                 let declName = key
                 const storeExpr = `${funcName}()`
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

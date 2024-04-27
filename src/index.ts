@@ -59,24 +59,24 @@ function transformVueScript(
   const {
     code: optionsCode,
     imports: optionsImports,
-    thisProperties,
-    properties,
+    instanceProperties,
+    optionProperties,
   } = transformOptions(vueOptions.object.properties, script.magicString, options)
   if (scriptSetup) {
-    if (properties.length) {
+    if (optionProperties.length) {
       const defineOptions = getDefineOptions(scriptSetup.ast)
       if (defineOptions) {
-        appendOptions(defineOptions.object, scriptSetup.magicString, properties, script.magicString)
+        appendOptions(defineOptions.object, scriptSetup.magicString, optionProperties, script.magicString)
       } else {
-        optionsCode.push(createDefineOptions(properties, script.magicString))
+        optionsCode.push(createDefineOptions(optionProperties, script.magicString))
       }
     }
     if (optionsCode.length) {
       prependStatements(scriptSetup.ast, scriptSetup.magicString, optionsCode)
     }
   } else if (options.scriptSetup) {
-    if (properties.length) {
-      optionsCode.push(createDefineOptions(properties, script.magicString))
+    if (optionProperties.length) {
+      optionsCode.push(createDefineOptions(optionProperties, script.magicString))
     }
     replaceStatements(vueOptions.exports, script.magicString, optionsCode)
   }
@@ -91,7 +91,7 @@ function transformVueScript(
   const {
     code: thisPropertiesCode,
     imports: thisPropertiesImports,
-  } = transformThisProperties(transformed.ast, transformed.magicString, thisProperties, options)
+  } = transformThisProperties(transformed.ast, transformed.magicString, instanceProperties, options)
   if (thisPropertiesCode.length) {
     prependStatements(transformed.ast, transformed.magicString, thisPropertiesCode)
   }
@@ -99,12 +99,12 @@ function transformVueScript(
   if (options.scriptSetup) {
     return transformed.magicString.toString()
   } else {
-    const returnCode = createSetupReturn(thisProperties)
+    const returnCode = createSetupReturn(instanceProperties)
     const setupBodyCode = transformed.magicString.toString()
     replaceStatements(
       vueOptions.exports,
       script.magicString,
-      [createExportOptions(properties, script.magicString, setupBodyCode + `\n\n` + returnCode)],
+      [createExportOptions(optionProperties, script.magicString, setupBodyCode + `\n\n` + returnCode)],
     )
     return script.magicString.toString()
   }

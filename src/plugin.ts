@@ -25,16 +25,16 @@ export interface Code extends BaseNode {
   priority: number,
 }
 
-export interface Hoist extends BaseNode {
-  type: 'Hoist',
+export interface HoistedCode extends BaseNode {
+  type: 'HoistedCode',
   content: string,
   priority: number,
 }
 
-export interface ThisProperty extends BaseNode {
-  type: 'ThisProperty',
+export interface Property extends BaseNode {
+  type: 'Property',
   name: string,
-  source: string,
+  source: unknown,
   exposed: boolean,
 }
 
@@ -43,9 +43,9 @@ export interface Replacement extends BaseNode {
   content: string | false,
 }
 
-export type TransformNode = Code | Hoist | Replacement | ThisProperty
+export type TransformNode = Code | HoistedCode | Replacement | Property
 
-export type VisitNode = Code | Hoist | Replacement
+export type VisitNode = Code | HoistedCode | Replacement
 
 export const factory = {
   priority: CodePriority,
@@ -54,13 +54,13 @@ export const factory = {
     content,
     priority,
   }),
-  hoist: (content: string, priority = 0): Hoist => ({
-    type: 'Hoist',
+  hoist: (content: string, priority = 0): HoistedCode => ({
+    type: 'HoistedCode',
     content,
     priority,
   }),
-  thisProperty: (name: string, source: string, exposed = true): ThisProperty => ({
-    type: 'ThisProperty',
+  property: (name: string, source: unknown, exposed = true): Property => ({
+    type: 'Property',
     name,
     source,
     exposed,
@@ -113,7 +113,7 @@ export interface VisitContext {
   name: string,
   node: MemberExpression,
   magicString: MagicStringAST,
-  source: string | undefined,
+  source: unknown,
 }
 
 export interface TransformHelpers {
