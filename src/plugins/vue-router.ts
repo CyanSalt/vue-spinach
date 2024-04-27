@@ -18,11 +18,11 @@ export default defineSpinachPlugin({
     if (name === '$router') {
       yield factory.hoist(`import { useRouter } from 'vue-router'`)
       yield factory.hoist(`const router = useRouter()`)
-      yield factory.replace('router')
+      return 'router'
     } else if (name === '$route') {
       yield factory.hoist(`import { useRoute } from 'vue-router'`)
       yield factory.hoist(`const route = useRoute()`)
-      yield factory.replace('route')
+      return 'route'
     }
   },
 })

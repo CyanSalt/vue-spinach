@@ -9,7 +9,7 @@ export default defineSpinachPlugin({
     if (options.scriptSetup) {
       yield factory.code(`const emit = defineEmits(${magicString.sliceNode(node)})`, factory.priority.interface)
     } else {
-      yield factory.replace(false)
+      return false
     }
   },
   *visitProperty({ name, source }, { factory }) {
@@ -17,7 +17,7 @@ export default defineSpinachPlugin({
       if (source !== 'emit') {
         yield factory.hoist(`const emit = defineEmits()`)
       }
-      yield factory.replace('emit')
+      return 'emit'
     }
   },
 })

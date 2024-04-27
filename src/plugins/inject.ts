@@ -51,11 +51,11 @@ export default defineSpinachPlugin({
       yield factory.hoist(`import { inject } from 'vue'`)
     }
   },
-  *visitProperty({ name, source }, { factory }) {
+  *visitProperty({ name, source }) {
     if (source === 'inject') {
-      yield factory.replace(`${name}.value`)
+      return `${name}.value`
     } else if (source === 'inject (reactivityTransform)') {
-      yield factory.replace(name)
+      return name
     }
   },
 })

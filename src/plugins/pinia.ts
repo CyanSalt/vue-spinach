@@ -128,13 +128,13 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, source }, { factory }) {
+  *visitProperty({ name, source }) {
     if (source === 'pinia computed') {
-      yield factory.replace(`${name}.value`)
+      return `${name}.value`
     } else if (source === 'pinia computed (reactivityTransform)') {
-      yield factory.replace(name)
+      return name
     } else if (source === 'pinia methods') {
-      yield factory.replace(name)
+      return name
     }
   },
 })

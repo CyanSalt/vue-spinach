@@ -19,9 +19,9 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, source }, { factory }) {
+  *visitProperty({ name, source }) {
     if (source === 'methods') {
-      yield factory.replace(name)
+      return name
     }
   },
 })

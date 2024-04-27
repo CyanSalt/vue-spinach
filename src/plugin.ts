@@ -38,14 +38,9 @@ export interface Property extends BaseNode {
   exposed: boolean,
 }
 
-export interface Replacement extends BaseNode {
-  type: 'Replacement',
-  content: string | false,
-}
+export type TransformNode = Code | HoistedCode | Property
 
-export type TransformNode = Code | HoistedCode | Replacement | Property
-
-export type VisitNode = Code | HoistedCode | Replacement
+export type VisitNode = Code | HoistedCode
 
 export const factory = {
   priority: CodePriority,
@@ -64,10 +59,6 @@ export const factory = {
     name,
     source,
     exposed,
-  }),
-  replace: (content: string | false): Replacement => ({
-    type: 'Replacement',
-    content,
   }),
 }
 
@@ -129,12 +120,12 @@ export interface Plugin {
   transformInclude?: (context: TransformContext) => boolean,
   transform?: (context: TransformContext, helpers: TransformHelpers) => Generator<
     TransformNode,
-    void,
+    void | false,
     unknown
   >,
   visitProperty?: (context: VisitContext, helpers: VisitHelpers) => Generator<
     VisitNode,
-    void,
+    void | string,
     unknown
   >,
 }

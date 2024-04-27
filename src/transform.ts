@@ -200,6 +200,16 @@ function generateLocalPluginCode(local: PluginCodeManager['local']) {
   })
 }
 
+function regenerate<T, U>(generator: Generator<T, U, unknown>) {
+  const result = {
+    *run() {
+      result.value = yield* generator
+    },
+    value: undefined as U,
+  }
+  return result
+}
+
 export function transformOptions(
   optionsObject: ObjectExpression['properties'],
   magicString: MagicStringAST,
@@ -224,7 +234,8 @@ export function transformOptions(
         for (const plugin of matchedPlugins) {
           const helpers: TransformHelpers = { factory, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
-          for (const item of plugin.transform!(context, helpers)) {
+          const generator = regenerate(plugin.transform!(context, helpers))
+          for (const item of generator.run()) {
             switch (item.type) {
               case 'Code':
                 addPluginCode(manager, plugin, item.content, item.priority)
@@ -232,13 +243,13 @@ export function transformOptions(
               case 'HoistedCode':
                 addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Replacement':
-                replacement = item.content
-                break
               case 'Property':
                 instanceProperties.push(item)
                 break
             }
+          }
+          if (generator.value !== undefined) {
+            replacement = generator.value
           }
         }
         if (replacement !== false) {
@@ -278,7 +289,8 @@ export function transformThisProperties(
         const helpers = { factory }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {
-          for (const item of plugin.visitProperty!(context, helpers)) {
+          const generator = regenerate(plugin.visitProperty!(context, helpers))
+          for (const item of generator.run()) {
             switch (item.type) {
               case 'Code':
                 addPluginCode(manager, plugin, item.content, item.priority)
@@ -286,10 +298,10 @@ export function transformThisProperties(
               case 'HoistedCode':
                 addHoistedPluginCode(manager, plugin, item.content, item.priority)
                 break
-              case 'Replacement':
-                replacement = item.content
-                break
             }
+          }
+          if (generator.value !== undefined) {
+            replacement = generator.value
           }
         }
         if (replacement !== false) {

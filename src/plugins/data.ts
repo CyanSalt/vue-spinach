@@ -41,11 +41,11 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, source }, { factory }) {
+  *visitProperty({ name, source }) {
     if (source === 'data') {
-      yield factory.replace(`${name}.value`)
+      return `${name}.value`
     } else if (source === 'data (reactivityTransform)') {
-      yield factory.replace(name)
+      return name
     }
   },
 })

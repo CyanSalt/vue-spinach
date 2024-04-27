@@ -38,10 +38,10 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, source }, { factory }) {
+  *visitProperty({ name, source }) {
     if (source === 'setup') {
       // TODO: not sure
-      yield factory.replace(`${name}.value`)
+      return `${name}.value`
     }
   },
 })
