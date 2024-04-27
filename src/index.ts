@@ -126,7 +126,8 @@ export function transformSFC(code: string, userOptions?: Partial<TransformOption
     ...defaultOptions,
     ...userOptions,
     aliases: { ...defaultOptions.aliases, ...userOptions?.aliases },
-    plugins: [...defaultOptions.plugins, ...(userOptions?.plugins ?? [])],
+    // Keep fallback plugin at last
+    plugins: [...(userOptions?.plugins ?? []), ...defaultOptions.plugins],
   }
   const { descriptor } = parse(code, {
     filename: `sfc.vue#${JSON.stringify(options)}`,

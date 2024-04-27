@@ -411,7 +411,7 @@ export function addImportDeclarations(ast: Program, magicString: MagicStringAST,
       }
     }
   }
-  const code = [...importCode, ...(declCode.length ? ['', ...declCode] : declCode)]
+  const code = [...importCode, ...(importCode.length && declCode.length ? [''] : []), ...declCode]
   const lastImports = getLastImports(ast)
   if (code.length) {
     if (lastImports) {
