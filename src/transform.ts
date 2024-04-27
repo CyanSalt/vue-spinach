@@ -48,8 +48,10 @@ export function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPro
 }
 
 interface PluginCodeManager {
-  imports: Fragment<ImportDeclaration>[],
-  decls: Fragment<VariableDeclaration>[],
+  hoisted: {
+    imports: Fragment<ImportDeclaration>[],
+    decls: Fragment<VariableDeclaration>[],
+  },
   local: Map<Plugin, {
     lines: string[],
     priority: number,
@@ -58,8 +60,10 @@ interface PluginCodeManager {
 
 function createPluginCodeManager(): PluginCodeManager {
   return {
-    imports: [],
-    decls: [],
+    hoisted: {
+      imports: [],
+      decls: [],
+    },
     local: new Map(),
   }
 }
@@ -71,7 +75,7 @@ function getPluginCodeLocalData(manager: PluginCodeManager, plugin: Plugin) {
   return manager.local.get(plugin)!
 }
 
-function addPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
+function addLocalCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
   const data = getPluginCodeLocalData(manager, plugin)
   data.lines.push(code)
   data.priority += priority
@@ -82,21 +86,21 @@ function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: 
   if (ast.body.length === 1) {
     const stmt = ast.body[0]
     if (stmt.type === 'ImportDeclaration') {
-      manager.imports.push({
+      manager.hoisted.imports.push({
         node: stmt,
         magicString: hoistedMagicString,
       })
       return
     }
     if (stmt.type === 'VariableDeclaration') {
-      manager.decls.push({
+      manager.hoisted.decls.push({
         node: stmt,
         magicString: hoistedMagicString,
       })
       return
     }
   }
-  addPluginCode(manager, plugin, code, priority)
+  addLocalCode(manager, plugin, code, priority)
 }
 
 function resolveVariableDeclarations(fragments: Fragment<VariableDeclaration>[]) {
@@ -175,182 +179,18 @@ function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[]) {
   return imports
 }
 
-function generateLocalPluginCode(local: PluginCodeManager['local']) {
+export function generateLocalCode(local: PluginCodeManager['local']) {
   return sortBy(
     Array.from(local.values()),
     data => (data.lines.length ? data.priority / data.lines.length : 0),
   ).flatMap(data => {
     return data.lines.length ? [data.lines.join('\n')] : []
-  })
+  }).join('\n\n')
 }
 
-function regenerate<T, U>(generator: Generator<T, U, unknown>) {
-  const result = {
-    *run() {
-      result.value = yield* generator
-    },
-    value: undefined as U,
-  }
-  return result
-}
-
-export function transformOptions(
-  optionsObject: ObjectExpression['properties'],
-  magicString: MagicStringAST,
-  options: TransformOptions,
-) {
-  const manager = createPluginCodeManager()
-  let instanceProperties: Property[] = []
-  const optionProperties = optionsObject.reduce<typeof optionsObject>(
-    (preserved, property) => {
-      if ((
-        property.type === 'ObjectProperty'
-        || property.type === 'ObjectMethod'
-      ) && (
-        property.key.type === 'Identifier'
-        || isLiteralType(property.key)
-      )) {
-        const name = resolveString(property.key)
-        const node = getPropertyValue(property)
-        const context = { name, node, magicString, options }
-        const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
-        let replacement: string | false = matchedPlugins.length ? '' : false
-        for (const plugin of matchedPlugins) {
-          const helpers: TransformHelpers = { factory, transform: undefined as never }
-          helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
-          const generator = regenerate(plugin.transform!(context, helpers))
-          for (const item of generator.run()) {
-            switch (item.type) {
-              case 'Code':
-                addPluginCode(manager, plugin, item.content, item.priority)
-                break
-              case 'HoistedCode':
-                addHoistedPluginCode(manager, plugin, item.content, item.priority)
-                break
-              case 'Property':
-                instanceProperties.push(item)
-                break
-            }
-          }
-          if (generator.value !== undefined) {
-            replacement = generator.value
-          }
-        }
-        if (replacement !== false) {
-          return preserved
-        }
-      }
-      preserved.push(property)
-      return preserved
-    },
-    [],
-  )
-  return {
-    code: generateLocalPluginCode(manager.local),
-    imports: manager.imports,
-    decls: manager.decls,
-    instanceProperties,
-    optionProperties,
-  }
-}
-
-export function transformThisProperties(
-  ast: Program,
-  magicString: MagicStringAST,
-  properties: Property[],
-  options: TransformOptions,
-) {
-  const manager = createPluginCodeManager()
-  const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
-  if (matchedPlugins.length) {
-    visitNode(ast, [], (node, path) => {
-      if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' && (
-        node.property.type === 'Identifier'
-        || isLiteralType(node.property)
-      )) {
-        const name = resolveString(node.property)
-        const source = properties.find(item => item.name === name)?.source
-        const context = { name, node, path, magicString, source }
-        const helpers = { factory }
-        let replacement: string | false = false
-        for (const plugin of matchedPlugins) {
-          const generator = regenerate(plugin.visitProperty!(context, helpers))
-          for (const item of generator.run()) {
-            switch (item.type) {
-              case 'Code':
-                addPluginCode(manager, plugin, item.content, item.priority)
-                break
-              case 'HoistedCode':
-                addHoistedPluginCode(manager, plugin, item.content, item.priority)
-                break
-            }
-          }
-          if (generator.value !== undefined) {
-            replacement = generator.value
-            if (source === undefined) {
-              context.source = plugin
-            }
-          }
-        }
-        if (replacement !== false) {
-          magicString.overwriteNode(node, replacement)
-        }
-      }
-    })
-  }
-  return {
-    code: generateLocalPluginCode(manager.local),
-    imports: manager.imports,
-    decls: manager.decls,
-  }
-}
-
-export function appendOptions(defineOptions: ObjectExpression, magicString: MagicStringAST, properties: ObjectExpression['properties'], sourceMagicString: MagicStringAST) {
-  magicString.appendLeft(
-    defineOptions.properties.at(-1)!.end!,
-    properties.map(property => `,\n  ${sourceMagicString.sliceNode(property)}`).join(''),
-  )
-}
-
-export function createDefineOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST) {
-  return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},\n`).join('')}})`
-}
-
-export function createSetupReturn(properties: Property[]) {
-  return `return {\n${
-    properties
-      .filter(property => property.exposed)
-      .map(property => `  ${property.name},\n`)
-      .join('')
-  }}`
-}
-
-export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
-  return `export default {\n${[
-    ...properties.map(property => `  ${magicString.sliceNode(property)},`),
-    `  setup(props, { attrs, slots, emit, expose }) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
-  ].join('\n')}\n}`
-}
-
-function getLastImports(ast: Program) {
-  return ast.body.findLast((node): node is ImportDeclaration => node.type === 'ImportDeclaration')
-}
-
-export function prependStatements(ast: Program, magicString: MagicStringAST, code: string[]) {
-  const lastImports = getLastImports(ast)
-  if (lastImports) {
-    magicString.appendRight(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
-  } else {
-    magicString.appendRight(0, code.map(statement => `${statement}\n\n`).join(''))
-  }
-}
-
-export function replaceStatements(node: Node | Node[], magicString: MagicStringAST, code: string[]) {
-  magicString.overwriteNode(node, code.join('\n\n'))
-}
-
-export function addImportDeclarations(ast: Program, magicString: MagicStringAST, fragments: PluginCodeManager['imports']) {
-  const imports = resolveImportDeclarations(fragments)
+export function generateHoistedCode(ast: Program, magicString: MagicStringAST, hoisted: PluginCodeManager['hoisted']) {
+  // 1. imports
+  const imports = resolveImportDeclarations(hoisted.imports)
   let importCode: string[] = []
   let declCode: string[] = []
   for (const [source, decl] of Object.entries(imports)) {
@@ -397,20 +237,9 @@ export function addImportDeclarations(ast: Program, magicString: MagicStringAST,
       }
     }
   }
-  const code = [...importCode, ...(importCode.length && declCode.length ? [''] : []), ...declCode]
-  const lastImports = getLastImports(ast)
-  if (code.length) {
-    if (lastImports) {
-      magicString.appendLeft(lastImports.end!, code.map(line => `\n${line}`).join(''))
-    } else {
-      magicString.appendLeft(0, code.map(line => `\n${line}`).join('') + '\n')
-    }
-  }
-}
-
-export function addVariableDeclarations(ast: Program, magicString: MagicStringAST, fragments: PluginCodeManager['decls']) {
-  const decls = resolveVariableDeclarations(fragments)
-  const code = Object.entries(decls).flatMap(([init, decl]) => {
+  // 2. decls
+  const decls = resolveVariableDeclarations(hoisted.decls)
+  declCode = declCode.concat(Object.entries(decls).flatMap(([init, decl]) => {
     let currentLines: string[] = []
     if (decl.identifier) {
       currentLines.push(`${decl.kind} ${decl.identifier} = ${init}`)
@@ -421,15 +250,186 @@ export function addVariableDeclarations(ast: Program, magicString: MagicStringAS
       currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${init}`)
     }
     return currentLines
-  })
+  }))
+  // 3. combine
   const lastImports = getLastImports(ast)
-  if (code.length) {
+  return [...importCode, ...((lastImports || importCode.length) && declCode.length ? [''] : []), ...declCode].join('\n')
+}
+
+function regenerate<T, U>(generator: Generator<T, U, unknown>) {
+  const result = {
+    *run() {
+      result.value = yield* generator
+    },
+    value: undefined as U,
+  }
+  return result
+}
+
+export function transformOptions(
+  optionsObject: ObjectExpression['properties'],
+  magicString: MagicStringAST,
+  options: TransformOptions,
+) {
+  const manager = createPluginCodeManager()
+  let instanceProperties: Property[] = []
+  const optionProperties = optionsObject.reduce<typeof optionsObject>(
+    (preserved, property) => {
+      if ((
+        property.type === 'ObjectProperty'
+        || property.type === 'ObjectMethod'
+      ) && (
+        property.key.type === 'Identifier'
+        || isLiteralType(property.key)
+      )) {
+        const name = resolveString(property.key)
+        const node = getPropertyValue(property)
+        const context = { name, node, magicString, options }
+        const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
+        let replacement: string | false = matchedPlugins.length ? '' : false
+        for (const plugin of matchedPlugins) {
+          const helpers: TransformHelpers = { factory, transform: undefined as never }
+          helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
+          const generator = regenerate(plugin.transform!(context, helpers))
+          for (const item of generator.run()) {
+            switch (item.type) {
+              case 'LocalCode':
+                addLocalCode(manager, plugin, item.content, item.priority)
+                break
+              case 'HoistedCode':
+                addHoistedPluginCode(manager, plugin, item.content, item.priority)
+                break
+              case 'Property':
+                instanceProperties.push(item)
+                break
+            }
+          }
+          if (generator.value !== undefined) {
+            replacement = generator.value
+          }
+        }
+        if (replacement !== false) {
+          return preserved
+        }
+      }
+      preserved.push(property)
+      return preserved
+    },
+    [],
+  )
+  return {
+    local: manager.local,
+    hoisted: manager.hoisted,
+    instanceProperties,
+    optionProperties,
+  }
+}
+
+export function transformThisProperties(
+  ast: Program,
+  magicString: MagicStringAST,
+  properties: Property[],
+  options: TransformOptions,
+) {
+  const manager = createPluginCodeManager()
+  const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
+  if (matchedPlugins.length) {
+    visitNode(ast, [], (node, path) => {
+      if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' && (
+        node.property.type === 'Identifier'
+        || isLiteralType(node.property)
+      )) {
+        const name = resolveString(node.property)
+        const source = properties.find(item => item.name === name)?.source
+        const context = { name, node, path, magicString, source }
+        const helpers = { factory }
+        let replacement: string | false = false
+        for (const plugin of matchedPlugins) {
+          const generator = regenerate(plugin.visitProperty!(context, helpers))
+          for (const item of generator.run()) {
+            switch (item.type) {
+              case 'LocalCode':
+                addLocalCode(manager, plugin, item.content, item.priority)
+                break
+              case 'HoistedCode':
+                addHoistedPluginCode(manager, plugin, item.content, item.priority)
+                break
+            }
+          }
+          if (generator.value !== undefined) {
+            replacement = generator.value
+            if (source === undefined) {
+              context.source = plugin
+            }
+          }
+        }
+        if (replacement !== false) {
+          magicString.overwriteNode(node, replacement)
+        }
+      }
+    })
+  }
+  return {
+    local: manager.local,
+    hoisted: manager.hoisted,
+  }
+}
+
+export function appendOptions(defineOptions: ObjectExpression, magicString: MagicStringAST, properties: ObjectExpression['properties'], sourceMagicString: MagicStringAST) {
+  magicString.appendLeft(
+    defineOptions.properties.at(-1)!.end!,
+    properties.map(property => `,\n  ${sourceMagicString.sliceNode(property)}`).join(''),
+  )
+}
+
+export function createDefineOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST) {
+  return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},\n`).join('')}})`
+}
+
+export function createSetupReturn(properties: Property[]) {
+  return `return {\n${
+    properties
+      .filter(property => property.exposed)
+      .map(property => `  ${property.name},\n`)
+      .join('')
+  }}`
+}
+
+export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
+  return `export default {\n${[
+    ...properties.map(property => `  ${magicString.sliceNode(property)},`),
+    `  setup(props, { attrs, slots, emit, expose }) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
+  ].join('\n')}\n}`
+}
+
+function getLastImports(ast: Program) {
+  return ast.body.findLast((node): node is ImportDeclaration => node.type === 'ImportDeclaration')
+}
+
+export function insertLocalCode(ast: Program, magicString: MagicStringAST, code: string) {
+  if (code) {
+    const lastImports = getLastImports(ast)
     if (lastImports) {
-      magicString.prependRight(lastImports.end!, code.map(line => `\n${line}`).join(''))
+      magicString.appendRight(lastImports.end!, `\n\n${code}`)
     } else {
-      magicString.prependRight(0, code.map(line => `\n${line}`).join('') + '\n')
+      magicString.appendRight(0, `\n${code}\n`)
     }
   }
+}
+
+export function insertHoistedCode(ast: Program, magicString: MagicStringAST, code: string) {
+  if (code) {
+    const lastImports = getLastImports(ast)
+    if (lastImports) {
+      magicString.prependRight(lastImports.end!, `\n${code}`)
+    } else {
+      magicString.prependRight(0, `\n${code}\n`)
+    }
+  }
+}
+
+export function replaceWithCode(node: Node | Node[], magicString: MagicStringAST, code: string) {
+  magicString.overwriteNode(node, code)
 }
 
 export function getProperties(node: ObjectExpression) {

@@ -2,13 +2,10 @@ import type { MemberExpression, Node } from '@babel/types'
 import type { MagicStringAST } from 'magic-string-ast'
 
 export const CodePriority = {
-  gap: 1,
-  // components, directives
-  dependency: -2,
   // props, emits, inject
   interface: -1,
   // setup, data
-  // state: 0,
+  state: 0,
   // computed, methods
   derived: 1,
   // watch, lifecycles
@@ -19,8 +16,8 @@ export interface BaseNode {
   type: string,
 }
 
-export interface Code extends BaseNode {
-  type: 'Code',
+export interface LocalCode extends BaseNode {
+  type: 'LocalCode',
   content: string,
   priority: number,
 }
@@ -40,14 +37,14 @@ export interface Property extends BaseNode {
   exposed: boolean,
 }
 
-export type TransformNode = Code | HoistedCode | Property
+export type TransformNode = LocalCode | HoistedCode | Property
 
-export type VisitNode = Code | HoistedCode
+export type VisitNode = LocalCode | HoistedCode
 
 export const factory = {
   priority: CodePriority,
-  code: (content: string, priority = 0): Code => ({
-    type: 'Code',
+  code: (content: string, priority = 0): LocalCode => ({
+    type: 'LocalCode',
     content,
     priority,
   }),
