@@ -350,9 +350,9 @@ function getLastImports(ast: Program) {
 export function prependStatements(ast: Program, magicString: MagicStringAST, code: string[]) {
   const lastImports = getLastImports(ast)
   if (lastImports) {
-    magicString.appendLeft(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
+    magicString.prependRight(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
   } else {
-    magicString.appendLeft(0, code.map(statement => `${statement}\n\n`).join(''))
+    magicString.prependRight(0, code.map(statement => `${statement}\n\n`).join(''))
   }
 }
 
