@@ -10,6 +10,7 @@ import transformDirectives from './plugins/directives'
 import transformEmits from './plugins/emits'
 import transformExpose from './plugins/expose'
 import transformInject from './plugins/inject'
+import transformInstance from './plugins/instance'
 import transformLifecycles from './plugins/lifecycles'
 import transformMethods from './plugins/methods'
 import transformPinia from './plugins/pinia'
@@ -43,6 +44,8 @@ const builtinPlugins: Plugin[] = [
   transformExpose,
   transformPinia,
   transformVueRouter,
+  // fallback
+  transformInstance,
 ]
 
 function transformVueScript(

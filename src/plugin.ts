@@ -34,6 +34,8 @@ export interface HoistedCode extends BaseNode {
 export interface Property extends BaseNode {
   type: 'Property',
   name: string,
+  // - `undefined` if no plugin transform this property
+  // - `Plugin` if a plugin visit and replace this property implicitly
   source: unknown,
   exposed: boolean,
 }

@@ -302,6 +302,9 @@ export function transformThisProperties(
           }
           if (generator.value !== undefined) {
             replacement = generator.value
+            if (source === undefined) {
+              context.source = plugin
+            }
           }
         }
         if (replacement !== false) {
