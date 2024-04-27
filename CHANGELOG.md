@@ -1,5 +1,13 @@
 
 
+## [0.1.0-beta.1](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.0...v0.1.0-beta.1) (2024-04-27)
+
+
+### Features
+
+* add hoist helper ([c8482db](https://github.com/CyanSalt/vue-spinach/commit/c8482db14082df2166ee612086eaed57c9f2d368))
+* use return value instead of replacement ([418039c](https://github.com/CyanSalt/vue-spinach/commit/418039ce704f59deb10ad3cc5cbba6856f88df6c))
+
 ## 0.1.0-beta.0 (2024-04-26)
 
 
