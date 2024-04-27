@@ -19,7 +19,7 @@ import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import transformWatch from './plugins/watch'
-import { addImportDeclarations, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
+import { addImportDeclarations, addVariableDeclarations, appendOptions, createDefineOptions, createExportOptions, createSetupReturn, getDefineOptions, getOptions, prependStatements, replaceStatements, transformOptions, transformThisProperties } from './transform'
 
 export type {
   Plugin,
@@ -62,6 +62,7 @@ function transformVueScript(
   const {
     code: optionsCode,
     imports: optionsImports,
+    decls: optionsDecls,
     instanceProperties,
     optionProperties,
   } = transformOptions(vueOptions.object.properties, script.magicString, options)
@@ -84,6 +85,7 @@ function transformVueScript(
     replaceStatements(vueOptions.exports, script.magicString, optionsCode)
   }
   addImportDeclarations(baseScript.ast, baseScript.magicString, optionsImports)
+  addVariableDeclarations(baseScript.ast, baseScript.magicString, optionsDecls)
   // Step 2: traverse this[key]
   const transformed = parseVueScript({
     ...baseScript.block,
@@ -94,14 +96,18 @@ function transformVueScript(
   const {
     code: thisPropertiesCode,
     imports: thisPropertiesImports,
+    decls: thisPropertiesDecls,
   } = transformThisProperties(transformed.ast, transformed.magicString, instanceProperties, options)
   if (thisPropertiesCode.length) {
     prependStatements(transformed.ast, transformed.magicString, thisPropertiesCode)
   }
-  addImportDeclarations(transformed.ast, transformed.magicString, thisPropertiesImports)
   if (options.scriptSetup) {
+    addImportDeclarations(transformed.ast, transformed.magicString, thisPropertiesImports)
+    addVariableDeclarations(transformed.ast, transformed.magicString, thisPropertiesDecls)
     return transformed.magicString.toString()
   } else {
+    addImportDeclarations(script.ast, script.magicString, thisPropertiesImports)
+    addVariableDeclarations(script.ast, script.magicString, thisPropertiesDecls)
     const returnCode = createSetupReturn(instanceProperties)
     const setupBodyCode = transformed.magicString.toString()
     replaceStatements(

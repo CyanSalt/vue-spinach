@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, provide, inject, computed, watch, onMounted } from 'vue'
+import { ref, provide, inject, computed, watch, onMounted, unref } from 'vue'
 // @ts-expect-error virtual file
 import MyButton from '/path/to/MyButton.vue'
 // @ts-expect-error virtual file
@@ -23,7 +23,7 @@ const suffix = ref('()')
 const msg = ref('')
 
 const formatted = computed(() => {
-      return props.prefix + msg.value + suffix.value
+      return props.prefix + msg.value + unref(suffix)
     })
 
 function reset() {
@@ -39,7 +39,7 @@ defineExpose({
   reset,
 })
 
-watch(() => suffix.value, async (value) => {
+watch(() => unref(suffix), async (value) => {
         reset()
       }, {
   immediate: true,

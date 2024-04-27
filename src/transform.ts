@@ -49,9 +49,9 @@ export function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPro
 
 interface PluginCodeManager {
   imports: Fragment<ImportDeclaration>[],
+  decls: Fragment<VariableDeclaration>[],
   local: Map<Plugin, {
     lines: string[],
-    decls: Fragment<VariableDeclaration>[],
     priority: number,
   }>,
 }
@@ -59,13 +59,14 @@ interface PluginCodeManager {
 function createPluginCodeManager(): PluginCodeManager {
   return {
     imports: [],
+    decls: [],
     local: new Map(),
   }
 }
 
 function getPluginCodeLocalData(manager: PluginCodeManager, plugin: Plugin) {
   if (!manager.local.has(plugin)) {
-    manager.local.set(plugin, { lines: [], decls: [], priority: 0 })
+    manager.local.set(plugin, { lines: [], priority: 0 })
   }
   return manager.local.get(plugin)!
 }
@@ -77,7 +78,6 @@ function addPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string,
 }
 
 function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
-  const data = getPluginCodeLocalData(manager, plugin)
   const { ast, magicString: hoistedMagicString } = parseScript(code)
   if (ast.body.length === 1) {
     const stmt = ast.body[0]
@@ -89,7 +89,7 @@ function addHoistedPluginCode(manager: PluginCodeManager, plugin: Plugin, code: 
       return
     }
     if (stmt.type === 'VariableDeclaration') {
-      data.decls.push({
+      manager.decls.push({
         node: stmt,
         magicString: hoistedMagicString,
       })
@@ -179,24 +179,8 @@ function generateLocalPluginCode(local: PluginCodeManager['local']) {
   return sortBy(
     Array.from(local.values()),
     data => (data.lines.length ? data.priority / data.lines.length : 0),
-  ).map(data => {
-    const decls = resolveVariableDeclarations(data.decls)
-    const codeLines = [
-      ...Object.entries(decls).flatMap(([init, decl]) => {
-        let currentLines: string[] = []
-        if (decl.identifier) {
-          currentLines.push(`${decl.kind} ${decl.identifier} = ${init}`)
-          if (decl.properties.length) {
-            currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${decl.identifier}`)
-          }
-        } else if (decl.properties.length) {
-          currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${init}`)
-        }
-        return currentLines
-      }),
-      ...data.lines,
-    ]
-    return codeLines.join('\n')
+  ).flatMap(data => {
+    return data.lines.length ? [data.lines.join('\n')] : []
   })
 }
 
@@ -264,6 +248,7 @@ export function transformOptions(
   return {
     code: generateLocalPluginCode(manager.local),
     imports: manager.imports,
+    decls: manager.decls,
     instanceProperties,
     optionProperties,
   }
@@ -316,6 +301,7 @@ export function transformThisProperties(
   return {
     code: generateLocalPluginCode(manager.local),
     imports: manager.imports,
+    decls: manager.decls,
   }
 }
 
@@ -353,9 +339,9 @@ function getLastImports(ast: Program) {
 export function prependStatements(ast: Program, magicString: MagicStringAST, code: string[]) {
   const lastImports = getLastImports(ast)
   if (lastImports) {
-    magicString.prependRight(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
+    magicString.appendRight(lastImports.end!, code.map(statement => `\n\n${statement}`).join(''))
   } else {
-    magicString.prependRight(0, code.map(statement => `${statement}\n\n`).join(''))
+    magicString.appendRight(0, code.map(statement => `${statement}\n\n`).join(''))
   }
 }
 
@@ -418,6 +404,30 @@ export function addImportDeclarations(ast: Program, magicString: MagicStringAST,
       magicString.appendLeft(lastImports.end!, code.map(line => `\n${line}`).join(''))
     } else {
       magicString.appendLeft(0, code.map(line => `\n${line}`).join('') + '\n')
+    }
+  }
+}
+
+export function addVariableDeclarations(ast: Program, magicString: MagicStringAST, fragments: PluginCodeManager['decls']) {
+  const decls = resolveVariableDeclarations(fragments)
+  const code = Object.entries(decls).flatMap(([init, decl]) => {
+    let currentLines: string[] = []
+    if (decl.identifier) {
+      currentLines.push(`${decl.kind} ${decl.identifier} = ${init}`)
+      if (decl.properties.length) {
+        currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${decl.identifier}`)
+      }
+    } else if (decl.properties.length) {
+      currentLines.push(`${decl.kind} {\n${decl.properties.map(varName => `  ${varName},\n`).join('')}} = ${init}`)
+    }
+    return currentLines
+  })
+  const lastImports = getLastImports(ast)
+  if (code.length) {
+    if (lastImports) {
+      magicString.prependRight(lastImports.end!, code.map(line => `\n${line}`).join(''))
+    } else {
+      magicString.prependRight(0, code.map(line => `\n${line}`).join('') + '\n')
     }
   }
 }

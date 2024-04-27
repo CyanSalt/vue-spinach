@@ -13,7 +13,7 @@ export default defineSpinachPlugin({
     }
   },
   *visitProperty({ name, source }, { factory }) {
-    if (name === 'emit') {
+    if (name === '$emit') {
       if (source !== 'emit') {
         yield factory.hoist(`const emit = defineEmits()`)
       }
