@@ -38,10 +38,15 @@ export default defineSpinachPlugin({
       }
     }
   },
-  *visitProperty({ name, source }) {
+  *visitProperty({ name, path, source }, { factory }) {
     if (source === 'setup') {
-      // TODO: not sure
-      return `${name}.value`
+      const parent = path.at(-1)!
+      if (parent.type === 'AssignmentExpression') {
+        return `${name}.value`
+      } else {
+        yield factory.hoist(`import { unref } from 'vue'`)
+        return `unref(${name})`
+      }
     }
   },
 })

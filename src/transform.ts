@@ -278,14 +278,14 @@ export function transformThisProperties(
   const manager = createPluginCodeManager()
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
-    visitNode(ast, node => {
+    visitNode(ast, [], (node, path) => {
       if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' && (
         node.property.type === 'Identifier'
         || isLiteralType(node.property)
       )) {
         const name = resolveString(node.property)
         const source = properties.find(item => item.name === name)?.source
-        const context = { name, node, magicString, source }
+        const context = { name, node, path, magicString, source }
         const helpers = { factory }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {

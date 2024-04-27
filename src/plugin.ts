@@ -103,6 +103,7 @@ export interface TransformContext {
 export interface VisitContext {
   name: string,
   node: MemberExpression,
+  path: Node[],
   magicString: MagicStringAST,
   source: unknown,
 }
