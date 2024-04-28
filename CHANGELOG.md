@@ -1,5 +1,24 @@
 
 
+## [0.1.0-beta.2](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.1...v0.1.0-beta.2) (2024-04-28)
+
+
+### Features
+
+* add fallback ([ef7e81e](https://github.com/CyanSalt/vue-spinach/commit/ef7e81e86067f426a9d0dcee650bf43710b6d674))
+* indentation ([f197b16](https://github.com/CyanSalt/vue-spinach/commit/f197b16c099f5aefbfb6e1a8278d51d4572963ce))
+
+
+### Bug Fixes
+
+* hoist dependencies ([5cd4360](https://github.com/CyanSalt/vue-spinach/commit/5cd43601c7698734da92f1a2a47338dc2468446b))
+* import order ([c4178b6](https://github.com/CyanSalt/vue-spinach/commit/c4178b66524a1907c0a6d4a174339ba41b6f695f))
+* imports in non setup script ([e00406b](https://github.com/CyanSalt/vue-spinach/commit/e00406b25802a32253822b0c9815971382c93f19))
+* indent ([1952004](https://github.com/CyanSalt/vue-spinach/commit/1952004cae58286635148ce97cc01d8ddde221d8))
+* mixed setup state ([be05cfd](https://github.com/CyanSalt/vue-spinach/commit/be05cfd048fa972cf84757d5bb24240f32e23d27))
+* plugin order ([4cdb1e9](https://github.com/CyanSalt/vue-spinach/commit/4cdb1e95ea449c4051cc1bc301231c5f2b140149))
+* remove magicString ([ed11bb0](https://github.com/CyanSalt/vue-spinach/commit/ed11bb09654edf87316cfdbf0115422e86d76466))
+
 ## [0.1.0-beta.1](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.0...v0.1.0-beta.1) (2024-04-27)
 
 
