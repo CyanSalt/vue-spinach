@@ -32,7 +32,7 @@ export default defineSpinachPlugin({
     if (source === 'computed') {
       return `${name}.value`
     } else if (source === 'computed (reactivityTransform)') {
-      return `${name}.value`
+      return name
     }
   },
 })
