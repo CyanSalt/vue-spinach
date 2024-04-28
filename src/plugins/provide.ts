@@ -18,7 +18,7 @@ export default defineSpinachPlugin({
         yield factory.code(codeBefore + '\n')
       }
       if (returnStmt.argument?.type === 'ObjectExpression') {
-        yield* transform(returnStmt.argument)
+        return yield* transform(returnStmt.argument)
       }
       return
     }

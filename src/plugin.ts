@@ -1,5 +1,4 @@
 import type { MemberExpression, Node } from '@babel/types'
-import type { MagicStringAST } from 'magic-string-ast'
 
 export const CodePriority = {
   // props, emits, inject
@@ -93,7 +92,6 @@ export interface TransformOptions {
 export interface TransformContext {
   name: string,
   node: Node,
-  magicString: MagicStringAST,
   options: TransformOptions,
 }
 
@@ -101,7 +99,6 @@ export interface VisitContext {
   name: string,
   node: MemberExpression,
   path: Node[],
-  magicString: MagicStringAST,
   source: unknown,
 }
 

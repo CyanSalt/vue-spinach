@@ -285,7 +285,7 @@ export function transformOptions(
       )) {
         const name = resolveString(property.key)
         const node = getPropertyValue(property)
-        const context = { name, node, magicString, options }
+        const context = { name, node, options }
         const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         let replacement: string | false = matchedPlugins.length ? '' : false
         for (const plugin of matchedPlugins) {
@@ -343,7 +343,7 @@ export function transformThisProperties(
       )) {
         const name = resolveString(node.property)
         const source = properties.find(item => item.name === name)?.source
-        const context = { name, node, path, magicString, source }
+        const context = { name, node, path, source }
         const helpers = { factory, stringify }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {
