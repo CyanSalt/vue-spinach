@@ -400,7 +400,7 @@ export function createSetupReturn(properties: Property[]) {
 export function createExportOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST, code: string) {
   return `export default {\n${[
     ...properties.map(property => `  ${magicString.sliceNode(property)},`),
-    `  setup(props, { attrs, slots, emit, expose }) {\n${code.split('\n').map(line => (line ? `    ${line}` : line)).join('\n')}\n  },`,
+    `  setup(props, { attrs, slots, emit, expose }) {\n    ${indent(code, 4)}\n  },`,
   ].join('\n')}\n}`
 }
 

@@ -13,5 +13,5 @@ export function dedent(code: string) {
 }
 
 export function indent(code: string, indentation: number) {
-  return code.replace(/\n(?!\n)/, '\n' + ' '.repeat(indentation))
+  return code.replace(/\n(?!\n)/g, '\n' + ' '.repeat(indentation))
 }
