@@ -1,8 +1,8 @@
 import { isFunctionType } from 'ast-kit'
 import { camelCase } from 'lodash-es'
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 
-export default defineSpinachPlugin({
+export default definePlugin({
   transformInclude({ name }) {
     return name === 'beforeRouteUpdate'
       || name === 'beforeRouteLeave'

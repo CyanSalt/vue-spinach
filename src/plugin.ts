@@ -127,6 +127,6 @@ export interface Plugin {
   >,
 }
 
-export function defineSpinachPlugin(plugin: Plugin) {
+export function definePlugin(plugin: Plugin) {
   return plugin
 }

@@ -1,6 +1,6 @@
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 
-export default defineSpinachPlugin({
+export default definePlugin({
   transformInclude({ name }) {
     return name === 'emits'
   },

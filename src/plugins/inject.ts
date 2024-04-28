@@ -1,9 +1,9 @@
 import type { Node } from '@babel/types'
 import { isLiteralType, resolveString } from 'ast-kit'
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 import { getProperties } from '../transform'
 
-export default defineSpinachPlugin({
+export default definePlugin({
   transformInclude({ name }) {
     return name === 'inject'
   },

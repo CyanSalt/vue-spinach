@@ -1,6 +1,6 @@
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 
-export default defineSpinachPlugin({
+export default definePlugin({
   *visitProperty({ name, node, source }, { factory, stringify }) {
     if (source === undefined) {
       yield factory.hoist(`import { getCurrentInstance } from 'vue'`)

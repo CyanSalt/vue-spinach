@@ -1,8 +1,8 @@
 import { isFunctionType } from 'ast-kit'
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 import { getPropertyValue, splitFunctionBody } from '../transform'
 
-export default defineSpinachPlugin({
+export default definePlugin({
   transformInclude({ name }) {
     return name === 'provide'
   },

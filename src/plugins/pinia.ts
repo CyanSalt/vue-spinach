@@ -1,7 +1,7 @@
 import type { Node, SpreadElement, VariableDeclaration } from '@babel/types'
 import { isLiteralType, resolveString } from 'ast-kit'
 import { camelCase } from 'lodash-es'
-import { defineSpinachPlugin } from '../plugin'
+import { definePlugin } from '../plugin'
 import type { ObjectPropertyValueLike } from '../transform'
 import { getProperties } from '../transform'
 
@@ -21,7 +21,7 @@ function getStoreProperties(node: Node) {
   return result
 }
 
-export default defineSpinachPlugin({
+export default definePlugin({
   transformInclude({ name }) {
     return name === 'computed'
       || name === 'methods'

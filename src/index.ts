@@ -26,7 +26,7 @@ export type {
   TransformOptions,
 }
 
-export { defineSpinachPlugin } from './plugin'
+export { definePlugin } from './plugin'
 
 const builtinPlugins: Plugin[] = [
   transformComponents,
