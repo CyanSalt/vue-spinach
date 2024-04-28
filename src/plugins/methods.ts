@@ -12,7 +12,7 @@ export default definePlugin({
       for (const [key, value] of Object.entries(properties)) {
         yield factory.property(key, 'methods')
         if (isFunctionType(value)) {
-          yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${stringify(value.params)}) ${stringify(value.body)}`, factory.priority.derived)
+          yield factory.code(stringify.fn(value, key), factory.priority.derived)
         } else {
           yield factory.code(`const ${key} = ${stringify(value)})`, factory.priority.derived)
         }

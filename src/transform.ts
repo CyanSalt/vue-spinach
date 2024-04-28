@@ -1,5 +1,5 @@
 import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement, VariableDeclaration } from '@babel/types'
-import { isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
+import { isFunctionType, isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
 import type { Fragment } from './ast'
@@ -266,12 +266,22 @@ function regenerate<T, U>(generator: Generator<T, U, unknown>) {
   return result
 }
 
+function createStringifyFunction(magicString: MagicStringAST) {
+  const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
+  stringify.fn = (node: Node, name?: string, indentation = 0) => (
+    isFunctionType(node)
+      ? `${node.async ? 'async ' : ''}${name !== undefined ? `function ${name}` : ''}(${stringify(node.params, indentation)}) ${name === undefined ? '=> ' : ''}${stringify(node.body, indentation)}`
+      : stringify(node, indentation)
+  )
+  return stringify
+}
+
 export function transformOptions(
   optionsObject: ObjectExpression['properties'],
   magicString: MagicStringAST,
   options: TransformOptions,
 ) {
-  const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
+  const stringify = createStringifyFunction(magicString)
   const manager = createPluginCodeManager()
   let instanceProperties: Property[] = []
   const optionProperties = optionsObject.reduce<typeof optionsObject>(
@@ -332,7 +342,7 @@ export function transformThisProperties(
   properties: Property[],
   options: TransformOptions,
 ) {
-  const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
+  const stringify = createStringifyFunction(magicString)
   const manager = createPluginCodeManager()
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {

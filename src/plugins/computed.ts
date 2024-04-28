@@ -11,9 +11,7 @@ export default definePlugin({
       const properties = getProperties(node)
       let hasComputed = false
       for (const [key, value] of Object.entries(properties)) {
-        const argCode = value.type === 'ObjectMethod'
-          ? `${value.async ? 'async ' : ''}(${stringify(value.params)}) => ${stringify(value.body)}`
-          : stringify(value)
+        const argCode = stringify.fn(value)
         if (options.reactivityTransform) {
           yield factory.property(key, 'computed (reactivityTransform)')
           yield factory.code(`${isFunctionType(value) ? 'const' : 'let'} ${key} = $computed(${argCode})`, factory.priority.derived)

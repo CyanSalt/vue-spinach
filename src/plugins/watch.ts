@@ -24,7 +24,7 @@ export default definePlugin({
           options = value.properties.filter(property => property !== handler)
         }
         if (handler) {
-          const handlerExpr = `${handler.async ? 'async ' : ''}(${stringify(handler.params)}) => ${stringify(handler.body)}`
+          const handlerExpr = stringify.fn(handler)
           const optionsExpr = options.length ? `{\n${options.map(option => `  ${stringify(option, 2)},\n`).join('')}}` : undefined
           hasWatch = true
           yield factory.code(`watch(() => this.${key}, ${handlerExpr}${optionsExpr ? `, ${optionsExpr}` : ''})`, factory.priority.effect)

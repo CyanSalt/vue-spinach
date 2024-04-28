@@ -102,15 +102,20 @@ export interface VisitContext {
   source: unknown,
 }
 
+export interface StringifyFunction {
+  (node: Node | Node[], indentation?: number): string,
+  fn(node: Node, name?: string, indentation?: number): string,
+}
+
 export interface TransformHelpers {
   factory: typeof factory,
-  stringify: (node: Node | Node[], indentation?: number) => string,
+  stringify: StringifyFunction,
   transform: (node: Node) => ReturnType<NonNullable<Plugin['transform']>>,
 }
 
 export interface VisitHelpers {
   factory: typeof factory,
-  stringify: (node: Node | Node[], indentation?: number) => string,
+  stringify: StringifyFunction,
 }
 
 export interface Plugin {

@@ -1,4 +1,3 @@
-import { isFunctionType } from 'ast-kit'
 import { camelCase } from 'lodash-es'
 import { definePlugin } from '../plugin'
 
@@ -29,11 +28,7 @@ export default definePlugin({
           ? 'onUnmounted'
           : camelCase(`on-${name}`)
       )
-    if (isFunctionType(node)) {
-      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`, factory.priority.effect)
-    } else {
-      yield factory.code(`${funcName}(${stringify(node)})`, factory.priority.effect)
-    }
+    yield factory.code(`${funcName}(${stringify.fn(node)})`, factory.priority.effect)
     yield factory.hoist(`import { ${funcName} } from 'vue'`)
   },
 })
