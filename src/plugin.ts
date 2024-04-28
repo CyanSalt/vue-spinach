@@ -60,6 +60,11 @@ export const factory = {
 
 export interface TransformOptions {
   /**
+   * Always generate code in typescript
+   * @default false
+   */
+  typescript: boolean,
+  /**
    * Whether to generate <script setup> block.
    * @default true
    */

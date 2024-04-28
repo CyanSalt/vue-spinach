@@ -10,13 +10,10 @@ const vMyClick = MyClick
 const type = inject('typeCtx', 'normal')
 
 const {
-  prefix,
-} = defineProps({
-  prefix: {
-    type: String,
-    default: 'my:',
-  },
-})
+  prefix = 'my:',
+} = defineProps<{
+  prefix?: string,
+}>()
 
 const emit = defineEmits(['reset'])
 

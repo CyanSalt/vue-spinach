@@ -56,6 +56,11 @@ export default {
 ```ts
 interface TransformOptions {
   /**
+   * Always generate code in typescript
+   * @default false
+   */
+  typescript: boolean,
+  /**
    * Whether to generate <script setup> block.
    * @default true
    */

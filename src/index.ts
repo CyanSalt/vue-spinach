@@ -48,11 +48,29 @@ const builtinPlugins: Plugin[] = [
   transformInstance,
 ]
 
+function resolveVueScriptOptions(source: VueScript, options: TransformOptions) {
+  return {
+    ...options,
+    typescript: options.typescript || (source.block.lang === 'ts' || source.block.lang === 'tsx'),
+  }
+}
+
+function cloneVueScript(source: VueScript, content: string, options: TransformOptions) {
+  const block = { ...source.block, content }
+  if (options.typescript && block.lang !== 'ts' && block.lang !== 'tsx') {
+    const lang = block.lang === 'jsx' ? 'tsx' : 'ts'
+    block.lang = lang
+    block.attrs.lang = lang
+  }
+  return parseVueScript(block)!
+}
+
 function transformVueScript(
   script: VueScript,
   scriptSetup: VueScript | undefined,
-  options: TransformOptions,
+  partialOptions: TransformOptions,
 ) {
+  const options = resolveVueScriptOptions(script, partialOptions)
   const baseScript = scriptSetup ?? script
   // Step 1: options to compositions
   const vueOptions = getOptions(script.ast)
@@ -85,12 +103,13 @@ function transformVueScript(
   const optionsHoistedCode = generateHoistedCode(baseScript.ast, baseScript.magicString, optionsHoisted, options)
   insertHoistedCode(baseScript.ast, baseScript.magicString, optionsHoistedCode)
   // Step 2: traverse this[key]
-  const transformed = parseVueScript({
-    ...baseScript.block,
-    content: options.scriptSetup
+  const transformed = cloneVueScript(
+    baseScript,
+    options.scriptSetup
       ? baseScript.magicString.toString()
       : optionsLocalCode,
-  })!
+    options,
+  )
   const {
     local: thisPropertiesLocal,
     hoisted: thisPropertiesHoisted,
@@ -126,6 +145,7 @@ function transformVueScript(
 }
 
 const defaultOptions: Required<TransformOptions> = {
+  typescript: false,
   scriptSetup: true,
   reactivityTransform: false,
   propsDestructure: true,
