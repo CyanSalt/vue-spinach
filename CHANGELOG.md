@@ -1,5 +1,21 @@
 
 
+## [0.1.0-beta.3](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.2...v0.1.0-beta.3) (2024-04-28)
+
+
+### Features
+
+* support stringify.fn ([5404142](https://github.com/CyanSalt/vue-spinach/commit/540414290a97cb0d99aa2ad6ffca5c2088015f6c))
+
+
+### Bug Fixes
+
+* arrow functions ([fdfdea1](https://github.com/CyanSalt/vue-spinach/commit/fdfdea1a0ec579b025c999d3ab10a8194159c74c))
+* fallback this properties ([11dd759](https://github.com/CyanSalt/vue-spinach/commit/11dd7591265d7e49932a870491d5f941d37e7486))
+* hoisted code fallback ([dbb929e](https://github.com/CyanSalt/vue-spinach/commit/dbb929e54408f486987311dcb1537bf2cfb8c257))
+* reactivity transform ([b6daa84](https://github.com/CyanSalt/vue-spinach/commit/b6daa84cd21b1f4bc1bb38d0ce94e750d4063c23))
+* respect aliases ([c31e58b](https://github.com/CyanSalt/vue-spinach/commit/c31e58b7f88e2e08418770745fcf4eccf8874e02))
+
 ## [0.1.0-beta.2](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.1...v0.1.0-beta.2) (2024-04-28)
 
 
