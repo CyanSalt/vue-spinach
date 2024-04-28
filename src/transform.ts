@@ -144,7 +144,7 @@ function resolveVariableDeclarations(fragments: Fragment<VariableDeclaration>[])
   return decls
 }
 
-function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[]) {
+function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[], aliases: Record<string, string>) {
   const imports: Record<string, {
     specifiers: string[],
     defaultSpecifier?: string,
@@ -152,7 +152,10 @@ function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[]) {
   }> = {}
   for (const { node } of fragments) {
     for (const specifier of node.specifiers) {
-      const source = resolveString(node.source)
+      let source = resolveString(node.source)
+      if (aliases[source]) {
+        source = aliases[source]
+      }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!imports[source]) {
         imports[source] = { specifiers: [] }
@@ -200,9 +203,9 @@ export function generateLocalCode(local: PluginCodeManager['local']) {
   ).flatMap(([priority, section]) => Array.from(section.values(), lines => lines.join('\n'))).join('\n\n')
 }
 
-export function generateHoistedCode(ast: Program, magicString: MagicStringAST, hoisted: PluginCodeManager['hoisted']) {
+export function generateHoistedCode(ast: Program, magicString: MagicStringAST, hoisted: PluginCodeManager['hoisted'], options: TransformOptions) {
   // 1. imports
-  const imports = resolveImportDeclarations(hoisted.imports)
+  const imports = resolveImportDeclarations(hoisted.imports, options.aliases)
   let importCode: string[] = []
   let declCode: string[] = []
   for (const [source, decl] of Object.entries(imports)) {
@@ -212,7 +215,7 @@ export function generateHoistedCode(ast: Program, magicString: MagicStringAST, h
         && resolveString(node.source) === source,
     )
     const existingDecl = (
-      resolveImportDeclarations(existingNodes.map(node => ({ node, magicString }))) as Partial<typeof imports>
+      resolveImportDeclarations(existingNodes.map(node => ({ node, magicString })), {}) as Partial<typeof imports>
     )[source]
     if (decl.namespaceSpecifier) {
       if (existingDecl?.namespaceSpecifier) {

@@ -82,7 +82,7 @@ function transformVueScript(
     }
     replaceWithCode(vueOptions.exports, script.magicString, optionsLocalCode)
   }
-  const optionsHoistedCode = generateHoistedCode(baseScript.ast, baseScript.magicString, optionsHoisted)
+  const optionsHoistedCode = generateHoistedCode(baseScript.ast, baseScript.magicString, optionsHoisted, options)
   insertHoistedCode(baseScript.ast, baseScript.magicString, optionsHoistedCode)
   // Step 2: traverse this[key]
   const transformed = parseVueScript({
@@ -102,6 +102,7 @@ function transformVueScript(
       transformed.ast,
       transformed.magicString,
       thisPropertiesHoisted,
+      options,
     )
     insertHoistedCode(transformed.ast, transformed.magicString, thisPropertiesHoistedCode)
     return transformed.magicString.toString()
@@ -110,6 +111,7 @@ function transformVueScript(
       script.ast,
       script.magicString,
       thisPropertiesHoisted,
+      options,
     )
     insertHoistedCode(script.ast, script.magicString, thisPropertiesHoistedCode)
     const returnCode = createSetupReturn(instanceProperties)
