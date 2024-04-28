@@ -337,11 +337,10 @@ export function transformThisProperties(
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
     visitNode(ast, [], (node, path) => {
-      if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' && (
-        node.property.type === 'Identifier'
-        || isLiteralType(node.property)
-      )) {
-        const name = resolveString(node.property)
+      if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression') {
+        const name = node.property.type === 'Identifier' || isLiteralType(node.property)
+          ? resolveString(node.property)
+          : undefined
         const source = properties.find(item => item.name === name)?.source
         const context = { name, node, path, source }
         const helpers = { factory, stringify }

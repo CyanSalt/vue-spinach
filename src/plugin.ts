@@ -96,7 +96,7 @@ export interface TransformContext {
 }
 
 export interface VisitContext {
-  name: string,
+  name: string | undefined,
   node: MemberExpression,
   path: Node[],
   source: unknown,
