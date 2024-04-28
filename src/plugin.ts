@@ -1,6 +1,6 @@
 import type { MemberExpression, Node } from '@babel/types'
 
-export const CodePriority = {
+const CodePriority = {
   // props, emits, inject
   interface: -1,
   // setup, data

@@ -54,9 +54,9 @@ interface PluginCodeManager {
     decls: Fragment<VariableDeclaration>[],
   },
   local: Map<Plugin, {
-    lines: string[],
+    content: string,
     priority: number,
-  }>,
+  }[]>,
 }
 
 function createPluginCodeManager(): PluginCodeManager {
@@ -71,18 +71,17 @@ function createPluginCodeManager(): PluginCodeManager {
 
 function getPluginCodeLocalData(manager: PluginCodeManager, plugin: Plugin) {
   if (!manager.local.has(plugin)) {
-    manager.local.set(plugin, { lines: [], priority: 0 })
+    manager.local.set(plugin, [])
   }
   return manager.local.get(plugin)!
 }
 
 function addLocalCode(manager: PluginCodeManager, plugin: Plugin, code: string, priority: number) {
   const data = getPluginCodeLocalData(manager, plugin)
-  data.lines.push(code)
-  data.priority += priority
+  data.push({ content: code, priority })
 }
 
-function addHoistedCode(manager: PluginCodeManager, code: string) {
+function addHoistedCode(manager: PluginCodeManager, plugin: Plugin, code: string) {
   const { ast, magicString: hoistedMagicString } = parseScript(code)
   if (ast.body.length === 1) {
     const stmt = ast.body[0]
@@ -101,6 +100,7 @@ function addHoistedCode(manager: PluginCodeManager, code: string) {
       return
     }
   }
+  addLocalCode(manager, plugin, code, -Infinity)
 }
 
 function resolveVariableDeclarations(fragments: Fragment<VariableDeclaration>[]) {
@@ -180,12 +180,24 @@ function resolveImportDeclarations(fragments: Fragment<ImportDeclaration>[]) {
 }
 
 export function generateLocalCode(local: PluginCodeManager['local']) {
+  const grouped = new Map<number, Map<Plugin, string[]>>()
+  for (const [plugin, data] of local.entries()) {
+    for (const line of data) {
+      if (!grouped.has(line.priority)) {
+        grouped.set(line.priority, new Map())
+      }
+      const section = grouped.get(line.priority)!
+      if (!section.has(plugin)) {
+        section.set(plugin, [])
+      }
+      const lines = section.get(plugin)!
+      lines.push(line.content)
+    }
+  }
   return sortBy(
-    Array.from(local.values()),
-    data => (data.lines.length ? data.priority / data.lines.length : 0),
-  ).flatMap(data => {
-    return data.lines.length ? [data.lines.join('\n')] : []
-  }).join('\n\n')
+    Array.from(grouped.entries()),
+    ([priority, section]) => priority,
+  ).flatMap(([priority, section]) => Array.from(section.values(), lines => lines.join('\n'))).join('\n\n')
 }
 
 export function generateHoistedCode(ast: Program, magicString: MagicStringAST, hoisted: PluginCodeManager['hoisted']) {
@@ -308,7 +320,7 @@ export function transformOptions(
                 addLocalCode(manager, plugin, item.content, item.priority)
                 break
               case 'HoistedCode':
-                addHoistedCode(manager, item.content)
+                addHoistedCode(manager, plugin, item.content)
                 break
               case 'Property':
                 instanceProperties.push(item)
@@ -363,7 +375,7 @@ export function transformThisProperties(
                 addLocalCode(manager, plugin, item.content, item.priority)
                 break
               case 'HoistedCode':
-                addHoistedCode(manager, item.content)
+                addHoistedCode(manager, plugin, item.content)
                 break
             }
           }
