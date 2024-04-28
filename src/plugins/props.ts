@@ -6,7 +6,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'props'
   },
-  *transform({ node, magicString, options }, { factory }) {
+  *transform({ node, options }, { factory, stringify }) {
     const destructuredProps: string[] = []
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
@@ -35,9 +35,9 @@ export default defineSpinachPlugin({
       if (options.propsDestructure) {
         yield factory.code(`const {\n${
           destructuredProps.map(prop => `  ${prop},\n`).join('')
-        }} = defineProps(${magicString.sliceNode(node)})`, factory.priority.interface)
+        }} = defineProps(${stringify(node)})`, factory.priority.interface)
       } else {
-        yield factory.code(`const props = defineProps(${magicString.sliceNode(node)})`, factory.priority.interface)
+        yield factory.code(`const props = defineProps(${stringify(node)})`, factory.priority.interface)
       }
     } else {
       return false

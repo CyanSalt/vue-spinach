@@ -7,7 +7,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'watch'
   },
-  *transform({ node, magicString }, { factory }) {
+  *transform({ node }, { factory, stringify }) {
     if (node.type === 'ObjectExpression') {
       let hasWatch = false
       const properties = getProperties(node)
@@ -24,8 +24,8 @@ export default defineSpinachPlugin({
           options = value.properties.filter(property => property !== handler)
         }
         if (handler) {
-          const handlerExpr = `${handler.async ? 'async ' : ''}(${handler.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(handler.body)}`
-          const optionsExpr = options.length ? `{\n${options.map(option => `  ${magicString.sliceNode(option)},\n`).join('')}}` : undefined
+          const handlerExpr = `${handler.async ? 'async ' : ''}(${stringify(handler.params)}) => ${stringify(handler.body)}`
+          const optionsExpr = options.length ? `{\n${options.map(option => `  ${stringify(option, 2)},\n`).join('')}}` : undefined
           hasWatch = true
           yield factory.code(`watch(() => this.${key}, ${handlerExpr}${optionsExpr ? `, ${optionsExpr}` : ''})`, factory.priority.effect)
         }

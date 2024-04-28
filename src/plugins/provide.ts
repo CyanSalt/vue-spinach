@@ -6,17 +6,16 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'provide'
   },
-  *transform({ node, magicString }, { factory, transform }) {
+  *transform({ node }, { factory, stringify, transform }) {
     if (isFunctionType(node) && node.body.type === 'BlockStatement') {
       const result = splitFunctionBody(node.body)
       if (!result) {
         throw new Error('"provide" function needs to contain a return statement at the top level.')
       }
       const [returnStmt, stmtsBefore] = result
-      const codeBefore = magicString.sliceNode(stmtsBefore)
+      const codeBefore = stringify(stmtsBefore)
       if (codeBefore) {
-        yield factory.code(codeBefore)
-        yield factory.code('')
+        yield factory.code(codeBefore + '\n')
       }
       if (returnStmt.argument?.type === 'ObjectExpression') {
         yield* transform(returnStmt.argument)
@@ -34,10 +33,8 @@ export default defineSpinachPlugin({
           const key = property.key
           const value = getPropertyValue(property)
           yield factory.code(`provide(${
-            key.type === 'Identifier'
-              ? `'${magicString.sliceNode(key)}'`
-              : magicString.sliceNode(key)
-          }, ${magicString.sliceNode(value)})`, factory.priority.effect)
+            key.type === 'Identifier' ? `'${key.name}'` : stringify(key)
+          }, ${stringify(value)})`, factory.priority.effect)
         }
       }
       if (hasProvide) {

@@ -6,7 +6,7 @@ export default defineSpinachPlugin({
   transformInclude({ name, options }) {
     return options.scriptSetup && name === 'directives'
   },
-  *transform({ node, magicString }, { factory }) {
+  *transform({ node }, { factory, stringify }) {
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
@@ -15,7 +15,7 @@ export default defineSpinachPlugin({
           ? value.name
           : undefined
         if (variableName !== name) {
-          yield factory.hoist(`const ${name} = ${magicString.sliceNode(value)}`)
+          yield factory.hoist(`const ${name} = ${stringify(value)}`)
         }
       }
     }

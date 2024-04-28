@@ -6,17 +6,16 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'data'
   },
-  *transform({ node, magicString, options }, { factory, transform }) {
+  *transform({ node, options }, { factory, stringify, transform }) {
     if (isFunctionType(node) && node.body.type === 'BlockStatement') {
       const result = splitFunctionBody(node.body)
       if (!result) {
         throw new Error('"data" function needs to contain a return statement at the top level.')
       }
       const [returnStmt, stmtsBefore] = result
-      const codeBefore = magicString.sliceNode(stmtsBefore)
+      const codeBefore = stringify(stmtsBefore)
       if (codeBefore) {
-        yield factory.code(codeBefore)
-        yield factory.code('')
+        yield factory.code(codeBefore + '\n')
       }
       if (returnStmt.argument?.type === 'ObjectExpression') {
         yield* transform(returnStmt.argument)
@@ -29,11 +28,11 @@ export default defineSpinachPlugin({
       for (const [key, value] of Object.entries(properties)) {
         if (options.reactivityTransform) {
           yield factory.property(key, 'data (reactivityTransform)')
-          yield factory.code(`let ${key} = $ref(${magicString.sliceNode(value)})`)
+          yield factory.code(`let ${key} = $ref(${stringify(value)})`)
         } else {
           hasRef = true
           yield factory.property(key, 'data')
-          yield factory.code(`const ${key} = ref(${magicString.sliceNode(value)})`)
+          yield factory.code(`const ${key} = ref(${stringify(value)})`)
         }
       }
       if (hasRef) {

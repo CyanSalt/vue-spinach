@@ -21,7 +21,7 @@ export default defineSpinachPlugin({
       || name === 'renderTriggered'
       || name === 'errorCaptured'
   },
-  *transform({ name, node, magicString }, { factory }) {
+  *transform({ name, node }, { factory, stringify }) {
     if (isFunctionType(node)) {
       const funcName = name === 'beforeCreate' || name === 'created'
         ? 'onBeforeMount'
@@ -30,7 +30,7 @@ export default defineSpinachPlugin({
             ? 'onUnmounted'
             : camelCase(`on-${name}`)
         )
-      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${node.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(node.body)})`, factory.priority.effect)
+      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`, factory.priority.effect)
       yield factory.hoist(`import { ${funcName} } from 'vue'`)
     }
   },

@@ -6,6 +6,7 @@ import type { Fragment } from './ast'
 import { parseScript, visitNode } from './ast'
 import type { Plugin, Property, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
+import { dedent, indent } from './utils'
 
 export function getOptions(ast: Program) {
   const exports = ast.body.find((node): node is ExportDefaultDeclaration => node.type === 'ExportDefaultDeclaration')
@@ -270,6 +271,7 @@ export function transformOptions(
   magicString: MagicStringAST,
   options: TransformOptions,
 ) {
+  const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
   const manager = createPluginCodeManager()
   let instanceProperties: Property[] = []
   const optionProperties = optionsObject.reduce<typeof optionsObject>(
@@ -287,7 +289,7 @@ export function transformOptions(
         const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         let replacement: string | false = matchedPlugins.length ? '' : false
         for (const plugin of matchedPlugins) {
-          const helpers: TransformHelpers = { factory, transform: undefined as never }
+          const helpers: TransformHelpers = { factory, stringify, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
           const generator = regenerate(plugin.transform!(context, helpers))
           for (const item of generator.run()) {
@@ -330,6 +332,7 @@ export function transformThisProperties(
   properties: Property[],
   options: TransformOptions,
 ) {
+  const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
   const manager = createPluginCodeManager()
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
@@ -341,7 +344,7 @@ export function transformThisProperties(
         const name = resolveString(node.property)
         const source = properties.find(item => item.name === name)?.source
         const context = { name, node, path, magicString, source }
-        const helpers = { factory }
+        const helpers = { factory, stringify }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {
           const generator = regenerate(plugin.visitProperty!(context, helpers))

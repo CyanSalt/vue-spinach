@@ -11,7 +11,6 @@ module.exports = {
       files: ['tests/**/*.vue'],
       rules: {
         'sort-imports': 'off',
-        '@stylistic/ts/indent': 'off',
         'vue/define-emits-declaration': 'off',
         'vue/define-props-declaration': 'off',
         'vue/match-component-file-name': 'off',

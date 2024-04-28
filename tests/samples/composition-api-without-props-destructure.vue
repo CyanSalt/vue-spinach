@@ -10,11 +10,11 @@ const vMyClick = MyClick
 const type = inject('typeCtx', 'normal')
 
 const props = defineProps({
-    prefix: {
-      type: String,
-      default: 'my:',
-    },
-  })
+  prefix: {
+    type: String,
+    default: 'my:',
+  },
+})
 
 const emit = defineEmits(['reset'])
 
@@ -23,15 +23,15 @@ const suffix = ref('()')
 const msg = ref('')
 
 const formatted = computed(() => {
-      return props.prefix + msg.value + unref(suffix)
-    })
+  return props.prefix + msg.value + unref(suffix)
+})
 
 function reset() {
-      if (type.value) {
-        msg.value = ''
-      }
-      emit('reset', msg.value)
-    }
+  if (type) {
+    msg.value = ''
+  }
+  emit('reset', msg.value)
+}
 
 provide('msg', msg.value)
 
@@ -40,14 +40,14 @@ defineExpose({
 })
 
 watch(() => unref(suffix), async (value) => {
-        reset()
-      }, {
+  reset()
+}, {
   immediate: true,
 })
 
 onMounted(() => {
-    msg.value = 'hello'
-  })
+  msg.value = 'hello'
+})
 
 defineOptions({
   name: 'Foo',

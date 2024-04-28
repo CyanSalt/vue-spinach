@@ -6,14 +6,14 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'computed'
   },
-  *transform({ node, magicString, options }, { factory }) {
+  *transform({ node, options }, { factory, stringify }) {
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
       let hasComputed = false
       for (const [key, value] of Object.entries(properties)) {
         const argCode = value.type === 'ObjectMethod'
-          ? `${value.async ? 'async ' : ''}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(value.body)}`
-          : magicString.sliceNode(value)
+          ? `${value.async ? 'async ' : ''}(${stringify(value.params)}) => ${stringify(value.body)}`
+          : stringify(value)
         if (options.reactivityTransform) {
           yield factory.property(key, 'computed (reactivityTransform)')
           yield factory.code(`${isFunctionType(value) ? 'const' : 'let'} ${key} = $computed(${argCode})`, factory.priority.derived)

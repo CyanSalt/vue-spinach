@@ -6,7 +6,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'setup'
   },
-  *transform({ node, magicString }, { factory }) {
+  *transform({ node }, { factory, stringify }) {
     if (isFunctionType(node)) {
       const params = node.params
       if (params.length && params[0].type === 'Identifier') {
@@ -21,7 +21,7 @@ export default defineSpinachPlugin({
           throw new Error('"setup" function needs to contain a return statement at the top level.')
         }
         const [returnStmt, stmtsBefore] = result
-        const codeBefore = magicString.sliceNode(stmtsBefore)
+        const codeBefore = stringify(stmtsBefore)
         if (codeBefore) {
           yield factory.code(codeBefore)
         }
@@ -31,7 +31,7 @@ export default defineSpinachPlugin({
             yield factory.property(key, 'setup')
             if (value.type !== 'Identifier' || value.name !== key) {
               // TODO: compat with reactivity transform
-              yield factory.code(`const ${key} = ${magicString.sliceNode(value)}`)
+              yield factory.code(`const ${key} = ${stringify(value)}`)
             }
           }
         }

@@ -26,7 +26,7 @@ export default defineSpinachPlugin({
     return name === 'computed'
       || name === 'methods'
   },
-  *transform({ node, magicString, options }, { factory }) {
+  *transform({ node, options }, { factory, stringify }) {
     if (node.type === 'ObjectExpression') {
       let hasStoreToRefs = false
       let hasComputed = false
@@ -71,7 +71,7 @@ export default defineSpinachPlugin({
                   const storeName = camelCase(`store-from-${funcName}`)
                   decls[storeExpr].name = storeName
                   hasComputed = true
-                  lines.push(`const ${key} = computed(() => {\n  return (${magicString.sliceNode(value)})(${storeName})\n})`)
+                  lines.push(`const ${key} = computed(() => {\n  return (${stringify(value, 2)})(${storeName})\n})`)
                 }
               }
             }

@@ -7,7 +7,7 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'inject'
   },
-  *transform({ node, magicString, options }, { factory }) {
+  *transform({ node, options }, { factory, stringify }) {
     let hasInject = false
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
@@ -21,15 +21,10 @@ export default defineSpinachPlugin({
         }
         hasInject = true
         const injectExpr = `inject(${
-          injectFrom ? magicString.sliceNode(injectFrom) : `'${key}'`
-        }${defaultValue ? `, ${magicString.sliceNode(defaultValue)}` : ''})`
-        if (options.reactivityTransform) {
-          yield factory.property(key, 'inject (reactivityTransform)')
-          yield factory.code(`let ${key} = $(${injectExpr})`, factory.priority.interface)
-        } else {
-          yield factory.property(key, 'inject')
-          yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
-        }
+          injectFrom ? stringify(injectFrom) : `'${key}'`
+        }${defaultValue ? `, ${stringify(defaultValue)}` : ''})`
+        yield factory.property(key, 'inject')
+        yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
       }
     } else if (node.type === 'ArrayExpression') {
       for (const element of node.elements) {
@@ -37,13 +32,8 @@ export default defineSpinachPlugin({
           hasInject = true
           const key = resolveString(element)
           const injectExpr = `inject('${key}')`
-          if (options.reactivityTransform) {
-            yield factory.property(key, 'inject (reactivityTransform)')
-            yield factory.code(`let ${key} = $(${injectExpr})`, factory.priority.interface)
-          } else {
-            yield factory.property(key, 'inject')
-            yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
-          }
+          yield factory.property(key, 'inject')
+          yield factory.code(`const ${key} = ${injectExpr}`, factory.priority.interface)
         }
       }
     }
@@ -53,8 +43,6 @@ export default defineSpinachPlugin({
   },
   *visitProperty({ name, source }) {
     if (source === 'inject') {
-      return `${name}.value`
-    } else if (source === 'inject (reactivityTransform)') {
       return name
     }
   },

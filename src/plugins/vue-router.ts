@@ -7,10 +7,10 @@ export default defineSpinachPlugin({
     return name === 'beforeRouteUpdate'
       || name === 'beforeRouteLeave'
   },
-  *transform({ name, node, magicString }, { factory }) {
+  *transform({ name, node }, { factory, stringify }) {
     if (isFunctionType(node)) {
       const funcName = camelCase(`on-${name}`)
-      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${node.params.map(param => magicString.sliceNode(param)).join(', ')}) => ${magicString.sliceNode(node.body)})`)
+      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`)
       yield factory.hoist(`import { ${funcName} } from 'vue-router'`)
     }
   },

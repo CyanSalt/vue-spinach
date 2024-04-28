@@ -6,15 +6,15 @@ export default defineSpinachPlugin({
   transformInclude({ name }) {
     return name === 'methods'
   },
-  *transform({ node, magicString }, { factory }) {
+  *transform({ node }, { factory, stringify }) {
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
         yield factory.property(key, 'methods')
         if (isFunctionType(value)) {
-          yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${value.params.map(param => magicString.sliceNode(param)).join(', ')}) ${magicString.sliceNode(value.body)}`, factory.priority.derived)
+          yield factory.code(`${value.async ? 'async ' : ''}function ${key}(${stringify(value.params)}) ${stringify(value.body)}`, factory.priority.derived)
         } else {
-          yield factory.code(`const ${key} = ${magicString.sliceNode(value)})`, factory.priority.derived)
+          yield factory.code(`const ${key} = ${stringify(value)})`, factory.priority.derived)
         }
       }
     }

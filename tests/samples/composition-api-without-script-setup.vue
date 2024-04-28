@@ -32,15 +32,15 @@ export default {
     const msg = ref('')
 
     const formatted = computed(() => {
-          return props.prefix + msg.value + unref(suffix)
-        })
+      return props.prefix + msg.value + unref(suffix)
+    })
 
     function reset() {
-          if (type.value) {
-            msg.value = ''
-          }
-          emit('reset', msg.value)
-        }
+      if (type) {
+        msg.value = ''
+      }
+      emit('reset', msg.value)
+    }
 
     provide('msg', msg.value)
 
@@ -49,14 +49,14 @@ export default {
     })
 
     watch(() => unref(suffix), async (value) => {
-            reset()
-          }, {
+      reset()
+    }, {
       immediate: true,
     })
 
     onMounted(() => {
-        msg.value = 'hello'
-      })
+      msg.value = 'hello'
+    })
 
     return {
       type,

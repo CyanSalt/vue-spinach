@@ -107,11 +107,13 @@ export interface VisitContext {
 
 export interface TransformHelpers {
   factory: typeof factory,
+  stringify: (node: Node | Node[], indentation?: number) => string,
   transform: (node: Node) => ReturnType<NonNullable<Plugin['transform']>>,
 }
 
 export interface VisitHelpers {
   factory: typeof factory,
+  stringify: (node: Node | Node[], indentation?: number) => string,
 }
 
 export interface Plugin {

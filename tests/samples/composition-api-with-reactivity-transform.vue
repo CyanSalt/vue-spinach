@@ -7,16 +7,16 @@ import MyClick from '/path/to/MyClick'
 
 const vMyClick = MyClick
 
-let type = $(inject('typeCtx', 'normal'))
+const type = inject('typeCtx', 'normal')
 
 const {
   prefix,
 } = defineProps({
-    prefix: {
-      type: String,
-      default: 'my:',
-    },
-  })
+  prefix: {
+    type: String,
+    default: 'my:',
+  },
+})
 
 const emit = defineEmits(['reset'])
 
@@ -25,15 +25,15 @@ const suffix = ref('()')
 let msg = $ref('')
 
 const formatted = $computed(() => {
-      return prefix + msg + unref(suffix)
-    })
+  return prefix + msg + unref(suffix)
+})
 
 function reset() {
-      if (type) {
-        msg = ''
-      }
-      emit('reset', msg)
-    }
+  if (type) {
+    msg = ''
+  }
+  emit('reset', msg)
+}
 
 provide('msg', msg)
 
@@ -42,14 +42,14 @@ defineExpose({
 })
 
 watch(() => unref(suffix), async (value) => {
-        reset()
-      }, {
+  reset()
+}, {
   immediate: true,
 })
 
 onMounted(() => {
-    msg = 'hello'
-  })
+  msg = 'hello'
+})
 
 defineOptions({
   name: 'Foo',
