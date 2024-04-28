@@ -7,20 +7,24 @@ export default definePlugin({
     return name === 'data'
   },
   *transform({ node, options }, { factory, stringify, transform }) {
-    if (isFunctionType(node) && node.body.type === 'BlockStatement') {
-      const result = splitFunctionBody(node.body)
-      if (!result) {
-        throw new Error('"data" function needs to contain a return statement at the top level.')
+    if (isFunctionType(node)) {
+      if (node.body.type === 'BlockStatement') {
+        const result = splitFunctionBody(node.body)
+        if (!result) {
+          throw new Error('"data" function needs to contain a return statement at the top level.')
+        }
+        const [returnStmt, stmtsBefore] = result
+        const codeBefore = stringify(stmtsBefore)
+        if (codeBefore) {
+          yield factory.code(codeBefore + '\n')
+        }
+        if (returnStmt.argument) {
+          return yield* transform(returnStmt.argument)
+        }
+        return
+      } else {
+        return yield* transform(node.body)
       }
-      const [returnStmt, stmtsBefore] = result
-      const codeBefore = stringify(stmtsBefore)
-      if (codeBefore) {
-        yield factory.code(codeBefore + '\n')
-      }
-      if (returnStmt.argument?.type === 'ObjectExpression') {
-        return yield* transform(returnStmt.argument)
-      }
-      return
     }
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)

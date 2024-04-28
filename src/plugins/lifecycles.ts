@@ -22,16 +22,18 @@ export default definePlugin({
       || name === 'errorCaptured'
   },
   *transform({ name, node }, { factory, stringify }) {
+    const funcName = name === 'beforeCreate' || name === 'created'
+      ? 'onBeforeMount'
+      : (
+        name === 'beforeDestroy' || name === 'destroyed'
+          ? 'onUnmounted'
+          : camelCase(`on-${name}`)
+      )
     if (isFunctionType(node)) {
-      const funcName = name === 'beforeCreate' || name === 'created'
-        ? 'onBeforeMount'
-        : (
-          name === 'beforeDestroy' || name === 'destroyed'
-            ? 'onUnmounted'
-            : camelCase(`on-${name}`)
-        )
       yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`, factory.priority.effect)
-      yield factory.hoist(`import { ${funcName} } from 'vue'`)
+    } else {
+      yield factory.code(`${funcName}(${stringify(node)})`, factory.priority.effect)
     }
+    yield factory.hoist(`import { ${funcName} } from 'vue'`)
   },
 })

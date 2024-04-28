@@ -8,11 +8,13 @@ export default definePlugin({
       || name === 'beforeRouteLeave'
   },
   *transform({ name, node }, { factory, stringify }) {
+    const funcName = camelCase(`on-${name}`)
     if (isFunctionType(node)) {
-      const funcName = camelCase(`on-${name}`)
-      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`)
-      yield factory.hoist(`import { ${funcName} } from 'vue-router'`)
+      yield factory.code(`${funcName}(${node.async ? 'async ' : ''}(${stringify(node.params)}) => ${stringify(node.body)})`, factory.priority.effect)
+    } else {
+      yield factory.code(`${funcName}(${stringify(node)})`, factory.priority.effect)
     }
+    yield factory.hoist(`import { ${funcName} } from 'vue-router'`)
   },
   *visitProperty({ name }, { factory }) {
     if (name === '$router') {

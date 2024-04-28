@@ -36,6 +36,8 @@ export default definePlugin({
           }
         }
       }
+    } else {
+      return false
     }
   },
   *visitProperty({ name, path, source }, { factory }) {
