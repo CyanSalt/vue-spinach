@@ -1,10 +1,9 @@
-import type { Node } from '@babel/types'
-import { isFunctionType, isLiteralType, resolveLiteral, resolveString } from 'ast-kit'
+import type { Node, TSAsExpression, TSTypeParameterInstantiation, TSTypeReference } from '@babel/types'
+import { isFunctionType, isIdentifierOf, isLiteralType, resolveLiteral, resolveString } from 'ast-kit'
 import { definePlugin } from '../plugin'
 import { getProperties } from '../transform'
 
-function getTSType(node: Node | undefined) {
-  if (!node) return 'any'
+function getTSType(node: Node) {
   if (node.type === 'ArrayExpression') {
     const types = node.elements
       .filter((element): element is Exclude<typeof element, null> => element !== null)
@@ -29,6 +28,17 @@ function getTSType(node: Node | undefined) {
   return 'any'
 }
 
+function isPropTypeReference(node: Node): node is TSAsExpression & {
+  typeAnnotation: TSTypeReference & {
+    typeParameters: TSTypeParameterInstantiation,
+  },
+} {
+  return node.type === 'TSAsExpression'
+    && node.typeAnnotation.type === 'TSTypeReference'
+    && node.typeAnnotation.typeParameters?.params.length === 1
+    && isIdentifierOf(node.typeAnnotation.typeName, 'PropType')
+}
+
 export default definePlugin({
   transformInclude({ name }) {
     return name === 'props'
@@ -38,13 +48,10 @@ export default definePlugin({
     if (node.type === 'ObjectExpression') {
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
+        destructuredProps[key] = value
         if (options.scriptSetup && options.propsDestructure) {
-          destructuredProps[key] = value
           yield factory.property(key, 'props (propsDestructure)', false)
         } else {
-          if (options.scriptSetup && options.typescript) {
-            destructuredProps[key] = value
-          }
           yield factory.property(key, 'props', false)
         }
       }
@@ -52,8 +59,8 @@ export default definePlugin({
       for (const element of node.elements) {
         if (isLiteralType(element)) {
           const key = resolveString(element)
+          destructuredProps[key] = true
           if (options.scriptSetup && options.propsDestructure) {
-            destructuredProps[key] = true
             yield factory.property(key, 'props (propsDestructure)', false)
           } else {
             yield factory.property(key, 'props', false)
@@ -84,7 +91,16 @@ export default definePlugin({
             if (propProperties.default) {
               defaults[key] = propProperties.default
             }
-            let type = getTSType(propProperties.type)
+            const typeExpr = propProperties.type
+            let type: string
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!typeExpr) {
+              type = 'any'
+            } else if (isPropTypeReference(typeExpr)) {
+              type = stringify(typeExpr.typeAnnotation.typeParameters.params[0])
+            } else {
+              type = getTSType(typeExpr)
+            }
             if (type === 'Function') {
               functionProps.push(key)
               type = '(...args: any[]) => any'
