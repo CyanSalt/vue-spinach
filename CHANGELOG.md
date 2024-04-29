@@ -1,5 +1,14 @@
 
 
+## [0.1.0-beta.4](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.3...v0.1.0-beta.4) (2024-04-29)
+
+
+### Features
+
+* defineProps in ts ([3f6ee4d](https://github.com/CyanSalt/vue-spinach/commit/3f6ee4d637f06935831437094fda668d22864024))
+* support PropType ([afb62e2](https://github.com/CyanSalt/vue-spinach/commit/afb62e2c960864e9d9a8125244ef7f99484879ae))
+* typed emits ([8f6ce31](https://github.com/CyanSalt/vue-spinach/commit/8f6ce31d66e30ea59aeb5a75d53bc3c233854ecf))
+
 ## [0.1.0-beta.3](https://github.com/CyanSalt/vue-spinach/compare/v0.1.0-beta.2...v0.1.0-beta.3) (2024-04-28)
 
 
