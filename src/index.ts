@@ -1,6 +1,5 @@
 import type { ObjectExpression } from '@babel/types'
 import { parse } from '@vue/compiler-sfc'
-import { resolveString } from 'ast-kit'
 import type { VueScript } from './ast'
 import { createSourceLocation, parseVueScript } from './ast'
 import { generateCode } from './generator'
@@ -21,7 +20,7 @@ import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import transformWatch from './plugins/watch'
-import { appendOptions, createDefineOptions, createExportOptions, createSetupReturn, generateHoistedCode, generateLocalCode, getDefineOptions, getOptions, insertHoistedCode, insertLocalCode, isNamedProperty, replaceWithCode, transformOptions, transformThisProperties } from './transform'
+import { appendOptions, createDefineOptions, createExportOptions, createSetupReturn, generateHoistedCode, generateLocalCode, getDefineOptions, getOptions, insertHoistedCode, insertLocalCode, replaceWithCode, transformOptions, transformThisProperties } from './transform'
 
 export type {
   Plugin,
@@ -57,9 +56,7 @@ function resolveVueScriptOptions(
 ) {
   return {
     ...options,
-    propsDestructure: options.propsDestructure && !optionsObject.properties.some(
-      property => isNamedProperty(property) && resolveString(property.key) === 'setup',
-    ),
+    propsDestructure: options.propsDestructure && options.scriptSetup,
     typescript: options.typescript || (source.block.lang === 'ts' || source.block.lang === 'tsx'),
   }
 }

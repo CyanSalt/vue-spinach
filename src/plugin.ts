@@ -1,4 +1,5 @@
 import type { MemberExpression, Node } from '@babel/types'
+import type { MagicStringAST } from 'magic-string-ast'
 
 const CodePriority = {
   // props, emits, inject
@@ -97,12 +98,14 @@ export interface TransformOptions {
 export interface TransformContext {
   name: string,
   node: Node,
+  magicString: MagicStringAST,
   options: TransformOptions,
 }
 
 export interface VisitContext {
   name: string | undefined,
   node: MemberExpression,
+  magicString: MagicStringAST,
   path: Node[],
   source: unknown,
   options: TransformOptions,
@@ -113,15 +116,19 @@ export interface StringifyFunction {
   fn(node: Node, name?: string, indentation?: number): string,
 }
 
+export type IterateFunction = (node: Node | Node[], fn: (node: Node, path: Node[]) => void) => void
+
 export interface TransformHelpers {
   factory: typeof factory,
   stringify: StringifyFunction,
+  iterate: IterateFunction,
   transform: (node: Node) => ReturnType<NonNullable<Plugin['transform']>>,
 }
 
 export interface VisitHelpers {
   factory: typeof factory,
   stringify: StringifyFunction,
+  iterate: IterateFunction,
 }
 
 export interface Plugin {

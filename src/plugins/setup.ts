@@ -1,4 +1,4 @@
-import { isFunctionType } from 'ast-kit'
+import { isFunctionType, isIdentifierOf } from 'ast-kit'
 import { definePlugin } from '../plugin'
 import { getProperties, splitFunctionBody } from '../transform'
 
@@ -6,7 +6,7 @@ export default definePlugin({
   transformInclude({ name }) {
     return name === 'setup'
   },
-  *transform({ node }, { factory, stringify }) {
+  *transform({ node, magicString }, { factory, iterate, stringify }) {
     if (isFunctionType(node)) {
       const params = node.params
       if (params.length && params[0].type === 'Identifier') {
@@ -21,6 +21,15 @@ export default definePlugin({
           throw new Error('"setup" function needs to contain a return statement at the top level.')
         }
         const [returnStmt, stmtsBefore] = result
+        const propsName = node.params.length && node.params[0].type === 'Identifier'
+          ? node.params[0].name : undefined
+        if (propsName) {
+          iterate(stmtsBefore, childNode => {
+            if (isIdentifierOf(childNode, propsName)) {
+              magicString.overwriteNode(childNode, 'this')
+            }
+          })
+        }
         const codeBefore = stringify(stmtsBefore)
         if (codeBefore) {
           yield factory.code(codeBefore)

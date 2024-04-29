@@ -53,17 +53,16 @@ export interface Fragment<T extends Node = Node> {
   magicString: MagicStringAST,
 }
 
-export function visitNode(node: Node, path: Node[], fn: (node: Node, path: Node[]) => void) {
-  fn(node, path)
-  const keys = VISITOR_KEYS[node.type] ?? []
-  for (const key of keys) {
-    const children = node[key]
-    if (Array.isArray(children)) {
-      children.forEach(child => {
-        visitNode(child, [...path, node], fn)
-      })
-    } else if (children) {
-      visitNode(children, [...path, node], fn)
+export function iterateNode(node: Node | Node[], path: Node[], fn: (node: Node, path: Node[]) => void) {
+  const nodes = Array.isArray(node) ? node : [node]
+  for (const item of nodes) {
+    fn(item, path)
+    const keys = VISITOR_KEYS[item.type] ?? []
+    for (const key of keys) {
+      const children = item[key]
+      if (children) {
+        iterateNode(children, [...path, item], fn)
+      }
     }
   }
 }

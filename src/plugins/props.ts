@@ -49,7 +49,7 @@ export default definePlugin({
       const properties = getProperties(node)
       for (const [key, value] of Object.entries(properties)) {
         destructuredProps[key] = value
-        if (options.scriptSetup && options.propsDestructure) {
+        if (options.propsDestructure) {
           yield factory.property(key, 'props (propsDestructure)', false)
         } else {
           yield factory.property(key, 'props', false)
@@ -60,7 +60,7 @@ export default definePlugin({
         if (isLiteralType(element)) {
           const key = resolveString(element)
           destructuredProps[key] = true
-          if (options.scriptSetup && options.propsDestructure) {
+          if (options.propsDestructure) {
             yield factory.property(key, 'props (propsDestructure)', false)
           } else {
             yield factory.property(key, 'props', false)

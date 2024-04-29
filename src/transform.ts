@@ -3,7 +3,7 @@ import { isFunctionType, isIdentifierOf, isLiteralType, resolveString } from 'as
 import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
 import type { Fragment } from './ast'
-import { parseScript, visitNode } from './ast'
+import { iterateNode, parseScript } from './ast'
 import type { Plugin, Property, TransformHelpers, TransformOptions } from './plugin'
 import { factory } from './plugin'
 import { dedent, indent } from './utils'
@@ -302,6 +302,13 @@ function regenerate<T, U>(generator: Generator<T, U, unknown>) {
   return result
 }
 
+function createIterateFunction() {
+  const iterate = (node: Node | Node[], fn: (node: Node, path: Node[]) => void) => {
+    iterateNode(node, [], fn)
+  }
+  return iterate
+}
+
 function createStringifyFunction(magicString: MagicStringAST) {
   const stringify = (node: Node | Node[], indentation = 0) => indent(dedent(magicString.sliceNode(node)), indentation)
   stringify.fn = (node: Node, name?: string, indentation = 0) => (
@@ -317,6 +324,7 @@ export function transformOptions(
   magicString: MagicStringAST,
   options: TransformOptions,
 ) {
+  const iterate = createIterateFunction()
   const stringify = createStringifyFunction(magicString)
   const manager = createPluginCodeManager()
   let instanceProperties: Property[] = []
@@ -325,11 +333,11 @@ export function transformOptions(
       if (isNamedProperty(property)) {
         const name = resolveString(property.key)
         const node = getPropertyValue(property)
-        const context = { name, node, options }
+        const context = { name, node, magicString, options }
         const matchedPlugins = options.plugins.filter(plugin => plugin.transformInclude?.(context) && plugin.transform)
         let replacement: string | false = matchedPlugins.length ? '' : false
         for (const plugin of matchedPlugins) {
-          const helpers: TransformHelpers = { factory, stringify, transform: undefined as never }
+          const helpers: TransformHelpers = { factory, stringify, iterate, transform: undefined as never }
           helpers.transform = (anotherNode) => plugin.transform!({ ...context, node: anotherNode }, helpers)
           const generator = regenerate(plugin.transform!(context, helpers))
           for (const item of generator.run()) {
@@ -372,18 +380,19 @@ export function transformThisProperties(
   properties: Property[],
   options: TransformOptions,
 ) {
+  const iterate = createIterateFunction()
   const stringify = createStringifyFunction(magicString)
   const manager = createPluginCodeManager()
   const matchedPlugins = options.plugins.filter(plugin => plugin.visitProperty)
   if (matchedPlugins.length) {
-    visitNode(ast, [], (node, path) => {
+    iterateNode(ast, [], (node, path) => {
       if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression') {
         const name = node.property.type === 'Identifier' || isLiteralType(node.property)
           ? resolveString(node.property)
           : undefined
         const source = properties.find(item => item.name === name)?.source
-        const context = { name, node, path, source, options }
-        const helpers = { factory, stringify }
+        const context = { name, node, magicString, path, source, options }
+        const helpers = { factory, stringify, iterate }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {
           const generator = regenerate(plugin.visitProperty!(context, helpers))
@@ -424,7 +433,8 @@ export function appendOptions(defineOptions: ObjectExpression, magicString: Magi
 }
 
 export function createDefineOptions(properties: ObjectExpression['properties'], magicString: MagicStringAST) {
-  return `defineOptions({\n${properties.map(property => `  ${magicString.sliceNode(property)},\n`).join('')}})`
+  const stringify = createStringifyFunction(magicString)
+  return `defineOptions({\n${properties.map(property => `  ${stringify(property, 2)},\n`).join('')}})`
 }
 
 export function createSetupReturn(properties: Property[]) {
