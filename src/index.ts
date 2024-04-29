@@ -1,4 +1,6 @@
+import type { ObjectExpression } from '@babel/types'
 import { parse } from '@vue/compiler-sfc'
+import { resolveString } from 'ast-kit'
 import type { VueScript } from './ast'
 import { createSourceLocation, parseVueScript } from './ast'
 import { generateCode } from './generator'
@@ -19,7 +21,7 @@ import transformProvide from './plugins/provide'
 import transformSetup from './plugins/setup'
 import transformVueRouter from './plugins/vue-router'
 import transformWatch from './plugins/watch'
-import { appendOptions, createDefineOptions, createExportOptions, createSetupReturn, generateHoistedCode, generateLocalCode, getDefineOptions, getOptions, insertHoistedCode, insertLocalCode, replaceWithCode, transformOptions, transformThisProperties } from './transform'
+import { appendOptions, createDefineOptions, createExportOptions, createSetupReturn, generateHoistedCode, generateLocalCode, getDefineOptions, getOptions, insertHoistedCode, insertLocalCode, isNamedProperty, replaceWithCode, transformOptions, transformThisProperties } from './transform'
 
 export type {
   Plugin,
@@ -48,9 +50,16 @@ const builtinPlugins: Plugin[] = [
   transformInstance,
 ]
 
-function resolveVueScriptOptions(source: VueScript, options: TransformOptions) {
+function resolveVueScriptOptions(
+  source: VueScript,
+  optionsObject: ObjectExpression,
+  options: TransformOptions,
+) {
   return {
     ...options,
+    propsDestructure: options.propsDestructure && !optionsObject.properties.some(
+      property => isNamedProperty(property) && resolveString(property.key) === 'setup',
+    ),
     typescript: options.typescript || (source.block.lang === 'ts' || source.block.lang === 'tsx'),
   }
 }
@@ -70,19 +79,19 @@ function transformVueScript(
   scriptSetup: VueScript | undefined,
   partialOptions: TransformOptions,
 ) {
-  const options = resolveVueScriptOptions(script, partialOptions)
   const baseScript = scriptSetup ?? script
   // Step 1: options to compositions
   const vueOptions = getOptions(script.ast)
   if (!vueOptions) {
     return baseScript.magicString.toString()
   }
+  const options = resolveVueScriptOptions(script, vueOptions.object, partialOptions)
   const {
     local: optionsLocal,
     hoisted: optionsHoisted,
     instanceProperties,
     optionProperties,
-  } = transformOptions(vueOptions.object.properties, script.magicString, options)
+  } = transformOptions(vueOptions.object, script.magicString, options)
   let optionsLocalCode = generateLocalCode(optionsLocal)
   if (scriptSetup) {
     if (optionProperties.length) {

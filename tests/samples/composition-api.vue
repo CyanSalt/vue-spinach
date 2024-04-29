@@ -15,7 +15,9 @@ const {
   prefix?: string,
 }>()
 
-const emit = defineEmits(['reset'])
+const emit = defineEmits<{
+  (event: 'reset', ...args: unknown[]): void,
+}>()
 
 const suffix = ref('()')
 

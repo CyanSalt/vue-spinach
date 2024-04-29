@@ -15,7 +15,9 @@ const props = withDefaults(defineProps<{
   prefix: 'my:',
 })
 
-const emit = defineEmits(['reset'])
+const emit = defineEmits<{
+  (event: 'reset', ...args: unknown[]): void,
+}>()
 
 const suffix = ref('()')
 

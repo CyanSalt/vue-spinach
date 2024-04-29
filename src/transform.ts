@@ -1,4 +1,4 @@
-import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, ImportDeclaration, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement, VariableDeclaration } from '@babel/types'
+import type { BlockStatement, CallExpression, ExportDefaultDeclaration, ExpressionStatement, Identifier, ImportDeclaration, Literal, Node, ObjectExpression, ObjectMethod, ObjectProperty, Program, ReturnStatement, VariableDeclaration } from '@babel/types'
 import { isFunctionType, isIdentifierOf, isLiteralType, resolveString } from 'ast-kit'
 import { sortBy } from 'lodash-es'
 import type { MagicStringAST } from 'magic-string-ast'
@@ -11,9 +11,18 @@ import { dedent, indent } from './utils'
 export function getOptions(ast: Program) {
   const exports = ast.body.find((node): node is ExportDefaultDeclaration => node.type === 'ExportDefaultDeclaration')
   if (exports) {
-    const object = exports.declaration
-    if (object.type !== 'ObjectExpression') {
-      throw new Error('Only object literal default exports are supported currently.')
+    let object: ObjectExpression
+    const decl = exports.declaration
+    if (decl.type === 'ObjectExpression') {
+      object = decl
+    } else if (
+      decl.type === 'CallExpression'
+      && decl.arguments.length === 1
+      && decl.arguments[0].type === 'ObjectExpression'
+    ) {
+      object = decl.arguments[0]
+    } else {
+      throw new Error('Invalid default exports in SFC.')
     }
     return {
       object,
@@ -43,6 +52,18 @@ export function getDefineOptions(ast: Program) {
 }
 
 export type ObjectPropertyValueLike = ObjectProperty['value'] | ObjectMethod
+
+export function isNamedProperty(
+  node: ObjectExpression['properties'][number],
+): node is (ObjectProperty | ObjectMethod) & { key: Identifier | Literal } {
+  return (
+    node.type === 'ObjectProperty'
+    || node.type === 'ObjectMethod'
+  ) && (
+    node.key.type === 'Identifier'
+    || isLiteralType(node.key)
+  )
+}
 
 export function getPropertyValue(node: ObjectProperty | ObjectMethod): ObjectPropertyValueLike {
   return node.type === 'ObjectProperty' ? node.value : node
@@ -292,22 +313,16 @@ function createStringifyFunction(magicString: MagicStringAST) {
 }
 
 export function transformOptions(
-  optionsObject: ObjectExpression['properties'],
+  optionsObject: ObjectExpression,
   magicString: MagicStringAST,
   options: TransformOptions,
 ) {
   const stringify = createStringifyFunction(magicString)
   const manager = createPluginCodeManager()
   let instanceProperties: Property[] = []
-  const optionProperties = optionsObject.reduce<typeof optionsObject>(
+  const optionProperties = optionsObject.properties.reduce<ObjectExpression['properties']>(
     (preserved, property) => {
-      if ((
-        property.type === 'ObjectProperty'
-        || property.type === 'ObjectMethod'
-      ) && (
-        property.key.type === 'Identifier'
-        || isLiteralType(property.key)
-      )) {
+      if (isNamedProperty(property)) {
         const name = resolveString(property.key)
         const node = getPropertyValue(property)
         const context = { name, node, options }
@@ -367,7 +382,7 @@ export function transformThisProperties(
           ? resolveString(node.property)
           : undefined
         const source = properties.find(item => item.name === name)?.source
-        const context = { name, node, path, source }
+        const context = { name, node, path, source, options }
         const helpers = { factory, stringify }
         let replacement: string | false = false
         for (const plugin of matchedPlugins) {
@@ -461,13 +476,7 @@ export function replaceWithCode(node: Node | Node[], magicString: MagicStringAST
 export function getProperties(node: ObjectExpression) {
   const result: Record<string, ObjectPropertyValueLike> = {}
   for (const property of node.properties) {
-    if ((
-      property.type === 'ObjectProperty'
-      || property.type === 'ObjectMethod'
-    ) && (
-      property.key.type === 'Identifier'
-      || isLiteralType(property.key)
-    )) {
+    if (isNamedProperty(property)) {
       const name = resolveString(property.key)
       result[name] = getPropertyValue(property)
     }

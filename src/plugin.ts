@@ -105,6 +105,7 @@ export interface VisitContext {
   node: MemberExpression,
   path: Node[],
   source: unknown,
+  options: TransformOptions,
 }
 
 export interface StringifyFunction {
