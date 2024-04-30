@@ -6,7 +6,7 @@ export default definePlugin({
   transformInclude({ name }) {
     return name === 'setup'
   },
-  *transform({ node, magicString }, { factory, iterate, stringify }) {
+  *transform({ node, magicString, options }, { factory, iterate, stringify }) {
     if (isFunctionType(node)) {
       const params = node.params
       if (params.length && params[0].type === 'Identifier') {
@@ -23,10 +23,11 @@ export default definePlugin({
         const [returnStmt, stmtsBefore] = result
         const propsName = node.params.length && node.params[0].type === 'Identifier'
           ? node.params[0].name : undefined
-        if (propsName) {
+        const targetName = options.propsDestructure ? 'this' : 'props'
+        if (propsName && propsName !== targetName) {
           iterate(stmtsBefore, childNode => {
             if (isIdentifierOf(childNode, propsName)) {
-              magicString.overwriteNode(childNode, 'this')
+              magicString.overwriteNode(childNode, targetName)
             }
           })
         }
