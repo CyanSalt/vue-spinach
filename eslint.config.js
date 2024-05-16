@@ -1,12 +1,14 @@
-module.exports = {
-  root: true,
-  extends: [
-    '@cyansalt/preset',
-  ],
-  parserOptions: {
-    project: './tsconfig.tools.json',
-  },
-  overrides: [
+import config from '@cyansalt/eslint-config'
+
+export default config({
+  configs: [
+    {
+      languageOptions: {
+        parserOptions: {
+          project: './tsconfig.tools.json',
+        },
+      },
+    },
     {
       files: ['tests/**/*.vue'],
       rules: {
@@ -17,7 +19,8 @@ module.exports = {
         'vue/no-ref-object-reactivity-loss': 'off',
         'vue/no-unused-properties': 'off',
         'vue/require-emit-validator': 'off',
+        'galaxy/vue-ref-style': 'off',
       },
     },
   ],
-}
+})

@@ -17,7 +17,7 @@
     "vue-spinach": "./dist/cli.mjs"
   },
   "scripts": {
-    "lint": "eslint --ignore-path .gitignore --fix --ext .js,.ts,.vue .",
+    "lint": "eslint --fix './**/*.{js,ts,vue}'",
     "prepack": "unbuild",
     "release": "release-it",
     "release:beta-as-latest": "pnpm run release --preRelease=beta --npm.tag=latest",
@@ -38,7 +38,7 @@
   },
   "homepage": "https://github.com/CyanSalt/vue-spinach#readme",
   "devDependencies": {
-    "@cyansalt/eslint-config-preset": "^1.18.0",
+    "@cyansalt/eslint-config": "^4.0.0",
     "@cyansalt/tsconfig": "^2.2.1",
     "@release-it/conventional-changelog": "^8.0.1",
     "@types/lodash-es": "^4.17.12",

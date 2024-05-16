@@ -3,8 +3,7 @@
   "include": [
     "**/*.js",
     "**/*.ts",
-    "**/*.vue",
-    ".eslintrc.cjs"
+    "**/*.vue"
   ],
   "exclude": [
     "**/dist",
