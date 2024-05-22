@@ -45,7 +45,7 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.12.7",
     "@vue-macros/reactivity-transform": "^0.4.4",
-    "eslint": "^8.57.0",
+    "eslint": "^9.3.0",
     "lodash-es": "^4.17.21",
     "release-it": "^17.2.0",
     "typescript": "^5.4.5",
