@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/vue-spinach.svg)](https://www.npmjs.com/package/vue-spinach)
 
-<img alt="vue-spinach" src="https://raw.githubusercontent.com/CyanSalt/vue-spinach/main/docs/spinach.svg" width="120" height="120">
+<img src="https://cdn.jsdelivr.net/gh/CyanSalt/vue-spinach@main/docs/spinach.svg" width="120" height="120">
 
 > Popeye can save Olive with the power of spinach. So do Olive.
 
