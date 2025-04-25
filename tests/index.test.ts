@@ -7,11 +7,11 @@ describe('transformSFC', () => {
 
   test('transform Vue SFC into Composition API', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/option-api.vue'),
+      path.join(import.meta.dirname, './fixtures/option-api.vue'),
       'utf-8',
     )
     const codeInCompositionAPI = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/composition-api.vue'),
+      path.join(import.meta.dirname, './fixtures/composition-api.vue'),
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI)
@@ -20,11 +20,11 @@ describe('transformSFC', () => {
 
   test('transform Vue SFC into Composition API without script setup', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/option-api.vue'),
+      path.join(import.meta.dirname, './fixtures/option-api.vue'),
       'utf-8',
     )
     const codeInCompositionAPIWithoutScriptSetup = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/composition-api-without-script-setup.vue'),
+      path.join(import.meta.dirname, './fixtures/composition-api-without-script-setup.vue'),
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI, {
@@ -35,11 +35,11 @@ describe('transformSFC', () => {
 
   test('transform Vue SFC into Composition API without props destructure', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/option-api.vue'),
+      path.join(import.meta.dirname, './fixtures/option-api.vue'),
       'utf-8',
     )
     const codeInCompositionAPIWithoutPropsDestructure = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/composition-api-without-props-destructure.vue'),
+      path.join(import.meta.dirname, './fixtures/composition-api-without-props-destructure.vue'),
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI, {
@@ -50,11 +50,11 @@ describe('transformSFC', () => {
 
   test('transform Vue SFC into Composition API with reactivity transform', async () => {
     const codeInOptionAPI = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/option-api.vue'),
+      path.join(import.meta.dirname, './fixtures/option-api.vue'),
       'utf-8',
     )
     const codeInCompositionAPIWithReactivityTransform = await fs.promises.readFile(
-      path.join(import.meta.dirname, './samples/composition-api-with-reactivity-transform.vue'),
+      path.join(import.meta.dirname, './fixtures/composition-api-with-reactivity-transform.vue'),
       'utf-8',
     )
     const result = transformSFC(codeInOptionAPI, {
